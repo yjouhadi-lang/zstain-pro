@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zstain Pro - Détermination Colorimétrique</title>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Z-Stain Pro<sup>®</sup></h1>
+            <p class="subtitle">Logiciel d'analyse et de maquillage colorimétrique des zircones</p>
+            <p class="affiliation">Service de Prothèse Conjointe — Unité de CFAO</p>
+            <p class="authors">Dr. Hachami Imane &nbsp;|&nbsp; Dr. Mazzir Nouhaila &nbsp;|&nbsp; Pr. Jouhadi El Mehdi</p>
+        </header>
+
+        <main class="main-grid">
+            <!-- Panneau gauche -->
+            <aside class="sidebar">
+                <section class="card input-card">
+                    <h2>Coordonnées Lab</h2>
+                    <p class="help-text">Saisissez les valeurs mesurées sur la dent du patient</p>
+                    <div class="input-group">
+                        <div class="field">
+                            <label for="input-L">L* <span class="hint">Luminosité</span></label>
+                            <input type="number" id="input-L" step="0.01" placeholder="82.50" min="0" max="100">
+                        </div>
+                        <div class="field">
+                            <label for="input-a">a* <span class="hint">Rouge (+) / Vert (−)</span></label>
+                            <input type="number" id="input-a" step="0.01" placeholder="3.20">
+                        </div>
+                        <div class="field">
+                            <label for="input-b">b* <span class="hint">Jaune (+) / Bleu (−)</span></label>
+                            <input type="number" id="input-b" step="0.01" placeholder="20.10">
+                        </div>
+                    </div>
+                    <div class="options">
+                        <label class="checkbox">
+                            <input type="checkbox" id="chk-ciede2000" checked>
+                            <span>Utiliser CIEDE2000 (recommandé)</span>
+                        </label>
+                    </div>
+                    <button id="btn-calculate" class="btn btn-primary">🔍 Trouver le match le plus proche</button>
+                </section>
+
+                <!-- Bouton toggle tableau -->
+                <button id="btn-toggle-table" class="btn btn-outline">📋 Afficher le tableau de référence</button>
+
+                <section class="card table-card" id="table-section" style="display: none;">
+                    <h2>Tableau de référence Zstain Pro</h2>
+                    <div class="table-wrapper">
+                        <table id="table-refs">
+                            <thead><tr><th>Code</th><th>Description</th><th>L*</th><th>a*</th><th>b*</th><th>ΔE</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Section Coffret GC Initial -->
+                <section class="card coffret-card" id="coffret-card" style="display: none;">
+                    <h2>🎨 Coffret GC Initial IQ Lustre Pastes ONE</h2>
+                    <div class="coffret-badge">V-SHADES SET</div>
+                    
+                    <div class="coffret-section">
+                        <h4>Produit principal recommandé</h4>
+                        <div class="product-highlight" id="coffret-body-shade">
+                            <div class="product-icon">🎯</div>
+                            <div class="product-info">
+                                <strong id="coffret-body-name">—</strong>
+                                <span id="coffret-body-desc">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="coffret-grid">
+                        <div class="coffret-col">
+                            <h4>Stains SPS (caractérisation)</h4>
+                            <ul class="coffret-list" id="coffret-stains"></ul>
+                        </div>
+                        <div class="coffret-col">
+                            <h4>Effets Émail</h4>
+                            <ul class="coffret-list" id="coffret-enamel"></ul>
+                        </div>
+                    </div>
+                    
+                    <div class="coffret-section">
+                        <h4>Liquides & Accessoires</h4>
+                        <ul class="coffret-list horizontal" id="coffret-liquides"></ul>
+                    </div>
+                    
+                    <div class="coffret-section">
+                        <h4>Outils</h4>
+                        <ul class="coffret-list horizontal" id="coffret-outils"></ul>
+                    </div>
+                    
+                    <div class="coffret-footer">
+                        <a href="static/pdf/coffret_gc_initial.pdf" target="_blank" class="btn btn-outline">📄 Voir la notice complète (PDF)</a>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Panneau droit: résultats -->
+            <div class="results-area">
+                <!-- État initial -->
+                <section class="card empty-state" id="empty-state">
+                    <div class="empty-icon">🎨</div>
+                    <h2>Bienvenue</h2>
+                    <p>Saisissez les coordonnées Lab de la dent du patient pour obtenir la pastille Zstain Pro la plus proche et le protocole de maquillage associé.</p>
+                </section>
+
+                <!-- Teintier visuel -->
+                <section class="card teintier-card" id="teintier-card" style="display: none;">
+                    <h2>🎨 Teintier visuel Zstain Pro</h2>
+                    <p class="help-text">Le cadre doré indique la pastille la plus proche de la dent du patient</p>
+                    <div class="teintier-grid" id="teintier-grid">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                    <div class="teintier-legend">
+                        <span class="legend-item"><span class="legend-dot match"></span> Meilleur match</span>
+                        <span class="legend-item"><span class="legend-dot measured"></span> Couleur mesurée</span>
+                    </div>
+                </section>
+
+                <!-- Comparaison visuelle -->
+                <section class="card comparison-card" id="comparison-card" style="display: none;">
+                    <h2>🔬 Comparaison visuelle</h2>
+                    <div class="comparison-row" id="comparison-row">
+                        <div class="comparison-item">
+                            <div class="pastille-img measured" id="comp-measured-img"></div>
+                            <div class="comparison-label">Dent mesurée</div>
+                            <div class="comparison-lab" id="comp-measured-lab"></div>
+                        </div>
+                        <div class="comparison-arrow">→</div>
+                        <div class="comparison-item">
+                            <div class="pastille-img reference" id="comp-ref-img"></div>
+                            <div class="comparison-label">Référence Zstain</div>
+                            <div class="comparison-lab" id="comp-ref-lab"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Barres d'effort -->
+                <section class="card effort-card" id="effort-card" style="display: none;">
+                    <h2>⚙️ Analyse des écarts et corrections nécessaires</h2>
+                    <p class="help-text">Chaque barre indique l'effort à développer pour rapprocher la prothèse de la couleur cible</p>
+                    
+                    <div class="effort-bars" id="effort-bars">
+                        <!-- L* -->
+                        <div class="effort-row" data-param="L">
+                            <div class="effort-info">
+                                <span class="effort-name">Luminosité L*</span>
+                                <span class="effort-value" id="effort-L-val">—</span>
+                            </div>
+                            <div class="effort-track">
+                                <div class="effort-fill" id="effort-L-bar"></div>
+                                <div class="effort-marker" id="effort-L-marker"></div>
+                            </div>
+                            <p class="effort-guide" id="effort-L-guide">—</p>
+                        </div>
+                        
+                        <!-- a* -->
+                        <div class="effort-row" data-param="a">
+                            <div class="effort-info">
+                                <span class="effort-name">Rouge-Vert a*</span>
+                                <span class="effort-value" id="effort-a-val">—</span>
+                            </div>
+                            <div class="effort-track">
+                                <div class="effort-fill" id="effort-a-bar"></div>
+                                <div class="effort-marker" id="effort-a-marker"></div>
+                            </div>
+                            <p class="effort-guide" id="effort-a-guide">—</p>
+                        </div>
+                        
+                        <!-- b* -->
+                        <div class="effort-row" data-param="b">
+                            <div class="effort-info">
+                                <span class="effort-name">Jaune-Bleu b*</span>
+                                <span class="effort-value" id="effort-b-val">—</span>
+                            </div>
+                            <div class="effort-track">
+                                <div class="effort-fill" id="effort-b-bar"></div>
+                                <div class="effort-marker" id="effort-b-marker"></div>
+                            </div>
+                            <p class="effort-guide" id="effort-b-guide">—</p>
+                        </div>
+                        
+                        <!-- C* -->
+                        <div class="effort-row" data-param="C">
+                            <div class="effort-info">
+                                <span class="effort-name">Saturation (Chroma) C*</span>
+                                <span class="effort-value" id="effort-C-val">—</span>
+                            </div>
+                            <div class="effort-track">
+                                <div class="effort-fill" id="effort-C-bar"></div>
+                                <div class="effort-marker" id="effort-C-marker"></div>
+                            </div>
+                            <p class="effort-guide" id="effort-C-guide">—</p>
+                        </div>
+                        
+                        <!-- H* -->
+                        <div class="effort-row" data-param="H">
+                            <div class="effort-info">
+                                <span class="effort-name">Teinte (Hue) H*</span>
+                                <span class="effort-value" id="effort-H-val">—</span>
+                            </div>
+                            <div class="effort-track">
+                                <div class="effort-fill" id="effort-H-bar"></div>
+                                <div class="effort-marker" id="effort-H-marker"></div>
+                            </div>
+                            <p class="effort-guide" id="effort-H-guide">—</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Résultat matching -->
+                <section class="card result-card" id="result-card" style="display: none;">
+                    <h2>🎯 Résultat du matching</h2>
+                    <div class="best-match">
+                        <div class="match-badge" id="match-badge">
+                            <span class="match-code">—</span>
+                            <span class="match-deltaE">ΔE = —</span>
+                        </div>
+                        <div class="match-details">
+                            <p id="match-description">—</p>
+                            <p id="match-interpretation" class="interpretation">—</p>
+                        </div>
+                    </div>
+                    <div class="all-matches">
+                        <h4>Classement</h4>
+                        <ol id="matches-list"></ol>
+                    </div>
+                </section>
+
+                <!-- Protocole -->
+                <section class="card protocol-card" id="protocol-card" style="display: none;">
+                    <h2>🔧 Protocole de maquillage</h2>
+                    <div id="protocol-content" class="protocol-content"></div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Zstain Pro &middot; CCTD – CHU Ibn Rochd</p>
+        </footer>
+    </div>
+    <script src="static/js/app.js"></script>
+</body>
+</html>
