@@ -230,18 +230,24 @@ function determinerStrategie(result) {
     if (!meilleurL0) meilleurL0 = l0Best;
     
     // Calculer le nombre de couches estimé
-    // Chaque couche ideale = ΔE 1.2 à 1.5
+    // Seuils basés sur les vraies données du groupe (1 couche ≈ deltaE du L0→L1 réel)
     const deltaDepuisL0 = minDelta;
-    const couchesEstimees = Math.max(0, Math.round(deltaDepuisL0 / 1.35));
-    const couchesClampees = Math.min(2, couchesEstimees); // Max 2 couches dans le protocole actuel
+    const l1DuGroupe = ZSTAIN_DATA.find(r => r.code === meilleurL0.groupe + 'L1');
+    const seuil1Couche = l1DuGroupe ? deltaE_cie76(l0Best.L, l0Best.a, l0Best.b, l1DuGroupe.L, l1DuGroupe.a, l1DuGroupe.b) : 1.5;
     
-    // Si delta depuis L0 est très faible, 0 couche
-    const niveauFinal = deltaDepuisL0 < 0.8 ? 0 : couchesClampees;
+    let niveauFinal = 0;
+    if (deltaDepuisL0 < 0.8) {
+        niveauFinal = 0;
+    } else if (deltaDepuisL0 < seuil1Couche + 0.5) {
+        niveauFinal = 1;
+    } else {
+        niveauFinal = 2; // Max 2 couches dans le protocole actuel
+    }
     
     return {
         pointDepart: meilleurL0,
         deltaDepuisL0: deltaDepuisL0,
-        couchesEstimees: couchesEstimees,
+
         niveauRecommande: niveauFinal,
         groupeDepart: meilleurL0.groupe,
     };
@@ -456,7 +462,7 @@ function generateProtocol(result, strategie) {
     protocol += `  Point de départ recommandé : ${l0.code}\n`;
     protocol += `    (${l0.description})\n`;
     protocol += `  Écart dent ↔ ${l0.code} : ΔE = ${strategie.deltaDepuisL0.toFixed(2)}\n`;
-    protocol += `  Nombre de couches estimé : ${strategie.couchesEstimees} (protocole niveau L${strategie.niveauRecommande})\n\n`;
+    protocol += `  Protocole recommandé : niveau L${strategie.niveauRecommande} (${strategie.niveauRecommande === 0 ? 'glaçage seul' : strategie.niveauRecommande === 1 ? '1 couche Body Shade' : '2 couches Body Shade max'})\n\n`;
     
     if (best.niveau > strategie.niveauRecommande) {
         protocol += `  → Le closest match ${best.code} suggérait PLUS de maquillage,\n`;
