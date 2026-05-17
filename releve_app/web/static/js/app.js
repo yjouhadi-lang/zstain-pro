@@ -16,6 +16,8 @@ const ZSTAIN_DATA = [
     { code: "A3L2", description: "A3 - 2ème couche de maquillage", groupe: "A3", niveau: 2, L: 77.13, a: 5.47, b: 25.48, deltaE_consecutif: 3.20 },
 ];
 
+const L_MAX_TEINTIER = Math.max(...ZSTAIN_DATA.map(r => r.L));
+
 const PROTOCOLE_MAQUILLAGE = {
     0: { nom: "Glaçage seul", preparation: "Nettoyage IPA 96 %", couches: "Aucune", produit: "Lustre Paste Neutral (L-N)", controle: "—", cuisson: "Glaçage Lustre NL (cuisson de connexion)" },
     1: { nom: "Painting — 1 couche", preparation: "Nettoyage IPA 96 %", couches: "1 couche Body Shade", produit: "GC Initial IQ Lustre Pastes ONE", controle: "Mesure Optishade (ΔE cible = 1.2 à 1.5)", cuisson: "1 cuisson effets + glaçage" },
@@ -603,6 +605,17 @@ function generateProtocol(result, strategie) {
 
 function updateUI(result) {
     document.getElementById('empty-state').style.display = 'none';
+    
+    // Détection blanchiment : L* patient > pastille la plus claire du teintier
+    const alertEl = document.getElementById('whitening-alert');
+    const lMaxEl = document.getElementById('whitening-lmax');
+    if (result.measured.L > L_MAX_TEINTIER) {
+        alertEl.style.display = 'block';
+        if (lMaxEl) lMaxEl.textContent = L_MAX_TEINTIER.toFixed(2);
+    } else {
+        alertEl.style.display = 'none';
+    }
+    
     document.getElementById('teintier-card').style.display = 'block';
     document.getElementById('comparison-card').style.display = 'block';
     document.getElementById('effort-card').style.display = 'block';
