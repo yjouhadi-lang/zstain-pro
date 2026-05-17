@@ -196,60 +196,17 @@ function rgbToHex(r, g, b) {
 function determinerStrategie(result) {
     const dent = result.measured;
     const best = result.bestMatch;
-    const groupes = ["A1", "A2", "A3"];
-    const idxBest = groupes.indexOf(best.groupe);
-
-    // On teste les L0 disponibles pour trouver le meilleur point de départ
-    let candidats = [];
     
-    // L0 du groupe du closest match
-    const l0Best = ZSTAIN_DATA.find(r => r.code === best.groupe + "L0");
-    if (l0Best) candidats.push(l0Best);
-    
-    // L0 du groupe supérieur (si existe)
-    if (idxBest < groupes.length - 1) {
-        const l0Sup = ZSTAIN_DATA.find(r => r.code === groupes[idxBest + 1] + "L0");
-        if (l0Sup) candidats.push(l0Sup);
-    }
-    
-    // L0 du groupe inférieur (si existe)
-    if (idxBest > 0) {
-        const l0Inf = ZSTAIN_DATA.find(r => r.code === groupes[idxBest - 1] + "L0");
-        if (l0Inf) candidats.push(l0Inf);
-    }
-    
-    // Choisir le L0 le plus proche de la dent
-    let meilleurL0 = null;
-    let minDelta = Infinity;
-    candidats.forEach(c => {
-        const de = deltaE_cie76(dent.L, dent.a, dent.b, c.L, c.a, c.b);
-        if (de < minDelta) { minDelta = de; meilleurL0 = c; }
-    });
-    
-    // Si aucun candidat (ne devrait pas arriver)
-    if (!meilleurL0) meilleurL0 = l0Best;
-    
-    // Calculer le nombre de couches estimé
-    // Seuils basés sur les vraies données du groupe (1 couche ≈ deltaE du L0→L1 réel)
-    const deltaDepuisL0 = minDelta;
-    const l1DuGroupe = ZSTAIN_DATA.find(r => r.code === meilleurL0.groupe + 'L1');
-    const seuil1Couche = l1DuGroupe ? deltaE_cie76(l0Best.L, l0Best.a, l0Best.b, l1DuGroupe.L, l1DuGroupe.a, l1DuGroupe.b) : 1.5;
-    
-    let niveauFinal = 0;
-    if (deltaDepuisL0 < 0.8) {
-        niveauFinal = 0;
-    } else if (deltaDepuisL0 < seuil1Couche + 0.5) {
-        niveauFinal = 1;
-    } else {
-        niveauFinal = 2; // Max 2 couches dans le protocole actuel
-    }
+    // Le closest match détermine directement le groupe de départ et le nombre de couches
+    // Ex: A3L1 → départ A3L0 + 1 couche de maquillage
+    const l0 = ZSTAIN_DATA.find(r => r.code === best.groupe + "L0");
+    const deltaDepuisL0 = l0 ? deltaE_cie76(dent.L, dent.a, dent.b, l0.L, l0.a, l0.b) : 0;
     
     return {
-        pointDepart: meilleurL0,
+        pointDepart: l0,
         deltaDepuisL0: deltaDepuisL0,
-
-        niveauRecommande: niveauFinal,
-        groupeDepart: meilleurL0.groupe,
+        niveauRecommande: best.niveau,
+        groupeDepart: best.groupe,
     };
 }
 
@@ -464,18 +421,8 @@ function generateProtocol(result, strategie) {
     protocol += `  Écart dent ↔ ${l0.code} : ΔE = ${strategie.deltaDepuisL0.toFixed(2)}\n`;
     protocol += `  Protocole recommandé : niveau L${strategie.niveauRecommande} (${strategie.niveauRecommande === 0 ? 'glaçage seul' : strategie.niveauRecommande === 1 ? '1 couche Body Shade' : '2 couches Body Shade max'})\n\n`;
     
-    if (best.niveau > strategie.niveauRecommande) {
-        protocol += `  → Le closest match ${best.code} suggérait PLUS de maquillage,\n`;
-        protocol += `    mais la dent est en réalité PLUS CLAIRE.\n`;
-        protocol += `    On part de ${l0.code} et on maquille LÉGÈREMENT.\n\n`;
-    } else if (best.niveau < strategie.niveauRecommande) {
-        protocol += `  → Le closest match ${best.code} suggérait MOINS de maquillage,\n`;
-        protocol += `    mais la dent est en réalité PLUS FONCÉE.\n`;
-        protocol += `    On part de ${l0.code} et on maquille PLUS intensément.\n\n`;
-    } else {
-        protocol += `  → Le closest match ${best.code} correspond bien à l'effort de maquillage\n`;
-        protocol += `    nécessaire depuis ${l0.code}.\n\n`;
-    }
+    protocol += `  → Le closest match ${best.code} indique directement le protocole :\n`;
+    protocol += `    ${best.niveau} couche(s) de maquillage sur ${l0.code}.\n\n`;
     
     protocol += `  ═══════════════════════════════════════════════════════════\n\n`;
     
