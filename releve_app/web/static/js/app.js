@@ -313,41 +313,35 @@ function renderEffortBars(result, strategie) {
 }
 
 function genererGuideEffort(param, valeur, l0, dent) {
-    const sens = valeur > 0 ? 'positif' : 'negatif';
     const abs = Math.abs(valeur);
     let guide = '';
     
+    // Les barres servent d'information visuelle sur le vecteur global.
+    // Les conseils segmentaires ont été remplacés par le protocole holistique.
+    
     if (param === 'L') {
-        if (sens === 'positif') {
-            guide = `La dent est PLUS CLAIRE que ${l0.code}. Depuis la pastille brute, vous devrez maquiller MODÉRÉMENT pour garder de la clarté. `;
-            guide += `Conseil : utiliser moins de Body Shade, privilégier L-N (Neutral) ou diluer avec Diluting Liquide.`;
-        } else {
-            guide = `La dent est PLUS FONCÉE que ${l0.code}. Depuis la pastille brute, vous devrez ASSOMBRIR par maquillage. `;
-            guide += `Conseil : appliquer le Body Shade en couche plus épaisse, réduire le Diluting Liquide.`;
-        }
+        guide = valeur > 0 
+            ? `L* supérieur : la dent est plus claire que ${l0.code}.`
+            : `L* inférieur : la dent est plus foncée que ${l0.code}.`;
     } else if (param === 'a') {
-        if (sens === 'positif') {
-            guide = `La dent est plus ROUGE que ${l0.code}. Ajouter du pigment rouge/warm : SPS-14 Pink sur cervicales, ou choisir Body Shade plus chaud.`;
-        } else {
-            guide = `La dent est plus VERTE que ${l0.code}. Réduire les pigments chauds, éviter SPS-14 Pink, privilégier les tons neutres (L-6, L-8).`;
-        }
+        guide = valeur > 0
+            ? `a* positif : décalage vers le rouge/warm.`
+            : `a* négatif : décalage vers le vert/froid.`;
     } else if (param === 'b') {
-        if (sens === 'positif') {
-            guide = `La dent est plus JAUNE que ${l0.code}. Renforcer le jaune : SPS-7 Yellow ou SPS-8 Orange, appliqués au 1/3 cervical et moyen.`;
-        } else {
-            guide = `La dent est moins jaune (plus bleue) que ${l0.code}. Atténuer le jaune : réduire SPS-7, utiliser SPS-17 Blue-Grey en incisal.`;
-        }
+        guide = valeur > 0
+            ? `b* positif : décalage vers le jaune.`
+            : `b* négatif : décalage vers le bleu (moins jaune).`;
     } else if (param === 'C') {
-        if (sens === 'positif') {
-            guide = `La dent est PLUS SATURÉE que ${l0.code}. Maquillage plus intense : Body Shade pur (sans dilution), 2 couches possibles.`;
-        } else {
-            guide = `La dent est MOINS SATURÉE que ${l0.code}. Maquillage plus doux : diluer le Body Shade (25-50% avec Diluting Liquide).`;
-        }
+        guide = valeur > 0
+            ? `C* supérieur : dent plus saturée que ${l0.code}.`
+            : `C* inférieur : dent moins saturée que ${l0.code}.`;
     } else if (param === 'H') {
-        guide = `Décalage de teinte entre la dent et ${l0.code}. Ajuster globalement : analyser si le décalage est plutôt vers rouge (a*) ou jaune (b*).`;
+        guide = `Décalage de teinte (Hue) détecté. Analyser la direction globale a*+b*.`;
     }
     
-    if (abs < 0.5) guide += ` (écart faible — ajustement minime suffisant)`;
+    if (abs < 0.5) guide += ` Écart faible — le Body Shade du groupe absorbe cette différence.`;
+    else guide += ` Voir le protocole holistique pour l'ajustement concret.`;
+    
     return guide;
 }
 
@@ -393,6 +387,57 @@ function renderCoffret(groupe, niveau) {
     });
 }
 
+function classerDirectionChromatique(deltaL, deltaa, deltab) {
+    const directions = [];
+    if (Math.abs(deltaL) > 0.5) directions.push(deltaL > 0 ? "plus claire" : "plus foncée");
+    if (Math.abs(deltaa) > 0.3) directions.push(deltaa > 0 ? "plus rouge/warm" : "plus verte/froide");
+    if (Math.abs(deltab) > 0.3) directions.push(deltab > 0 ? "plus jaune" : "moins jaune (bleutée)");
+    if (directions.length === 0) return "très proche";
+    return directions.join(", ");
+}
+
+function recommanderSPS(deltaL, deltaa, deltab, groupe) {
+    const sps = [];
+    // Body Shade corrige le gros du vecteur L+a+b
+    // Les SPS servent à affiner la direction chromatique résiduelle
+    if (deltaa > 0.3 && deltab > 0.3) {
+        sps.push("SPS-8 Orange (warm global, cervical + moyen)");
+        if (groupe === "A3") sps.push("SPS-13 Brown (profondeur, 1/3 cervical)");
+    } else if (deltaa > 0.3 && deltab < -0.3) {
+        sps.push("SPS-14 Pink (rouge sans jaune, zones cervicales)");
+        sps.push("SPS-17 Blue-Grey (incisal, translucidité)");
+    } else if (deltaa < -0.3 && deltab > 0.3) {
+        sps.push("SPS-7 Yellow (jaune sans rouge, moyen)");
+        sps.push("L-9 / L-10 (effets clairs, casser le warm)");
+    } else if (deltaa < -0.3 && deltab < -0.3) {
+        sps.push("SPS-17 Blue-Grey (froid, incisal)");
+        sps.push("L-OP opalescent (neutraliser le chroma)");
+    } else if (deltaa > 0.3) {
+        sps.push("SPS-14 Pink (cervical)");
+    } else if (deltaa < -0.3) {
+        sps.push("L-6 / L-8 (effets neutres, éviter warm)");
+    } else if (deltab > 0.3) {
+        sps.push("SPS-7 Yellow (cervical + moyen)");
+    } else if (deltab < -0.3) {
+        sps.push("SPS-17 Blue-Grey (incisal)");
+        sps.push("L-9 / L-10 (effets clairs/blancs)");
+    }
+    if (deltaL < -2.0 && sps.length > 0) {
+        sps.unshift("⚠️ Attention : la dent est nettement plus foncée. Privilégier Body Shade épais AVANT tout SPS stain.");
+    }
+    if (deltaL > 1.5 && sps.length > 0) {
+        sps.unshift("⚠️ Attention : la dent est plus claire. Appliquer Body Shade TRÈS FIN ou diluer. Les SPS stains foncés risquent de sur-assombrir.");
+    }
+    return sps;
+}
+
+function genererAjustementEmail(deltaL, deltaC) {
+    if (deltaL < -2 && deltaC > 0) return "L-3 ou L-6 (émail translucide/moyen) — la dent est foncée ET saturée, l'émail doit rester naturel.";
+    if (deltaL < -2 && deltaC < 0) return "L-OP opalescent + L-3 — casser le chroma tout en gardant de la profondeur.";
+    if (deltaL > 1) return "L-9 / L-10 (émail très clair/blanc) — compenser la clarté en incisal.";
+    return "L-6 / L-8 (émail standard) — ajustement classique.";
+}
+
 function generateProtocol(result, strategie) {
     const dent = result.measured;
     const best = result.bestMatch;
@@ -400,153 +445,82 @@ function generateProtocol(result, strategie) {
     const proto = PROTOCOLE_MAQUILLAGE[strategie.niveauRecommande];
     const interp = interpretDeltaE(result.deltaE);
     
-    // Écarts par rapport au point de départ L0
     const deltaL = dent.L - l0.L;
     const deltaa = dent.a - l0.a;
     const deltab = dent.b - l0.b;
     const deltaC = chroma(dent.a, dent.b) - chroma(l0.a, l0.b);
-    const de76 = deltaE_cie76(dent.L, dent.a, dent.b, l0.L, l0.a, l0.b);
-    const deltaH = Math.sqrt(Math.max(0, de76**2 - deltaL**2 - deltaC**2));
+    
+    const direction = classerDirectionChromatique(deltaL, deltaa, deltab);
+    const spsList = recommanderSPS(deltaL, deltaa, deltab, l0.groupe);
+    const emailRec = genererAjustementEmail(deltaL, deltaC);
     
     let protocol = `> RÉSULTAT DU MATCHING\n`;
     protocol += `  Closest match : ${best.code} (${best.description})\n`;
     protocol += `  ΔE avec la pastille la plus proche : ${result.deltaE.toFixed(2)} — ${interp.text}\n\n`;
     
-    protocol += `> STRATÉGIE DE DÉPART (logique Zstain Pro)\n`;
+    protocol += `> DIAGNOSTIC CHROMATIQUE GLOBAL\n`;
     protocol += `  ═══════════════════════════════════════════════════════════\n\n`;
-    protocol += `  PRINCIPE : On part TOUJOURS d'une pastille brute (niveau L0),\n`;
-    protocol += `  puis on maquille pour approcher la teinte de la dent du patient.\n\n`;
-    protocol += `  Point de départ recommandé : ${l0.code}\n`;
-    protocol += `    (${l0.description})\n`;
-    protocol += `  Écart dent ↔ ${l0.code} : ΔE = ${strategie.deltaDepuisL0.toFixed(2)}\n`;
-    protocol += `  Protocole recommandé : niveau L${strategie.niveauRecommande} (${strategie.niveauRecommande === 0 ? 'glaçage seul' : strategie.niveauRecommande === 1 ? '1 couche Body Shade' : '2 couches Body Shade max'})\n\n`;
-    
-    protocol += `  → Le closest match ${best.code} indique directement le protocole :\n`;
-    protocol += `    ${best.niveau} couche(s) de maquillage sur ${l0.code}.\n\n`;
-    
+    protocol += `  La dent du patient est ${direction} que ${l0.code}.\n`;
+    protocol += `  Direction vectorielle : ΔL=${deltaL.toFixed(2)}, Δa=${deltaa > 0 ? '+' : ''}${deltaa.toFixed(2)}, Δb=${deltab > 0 ? '+' : ''}${deltab.toFixed(2)}.\n\n`;
+    protocol += `  Le closest match ${best.code} indique que ${best.niveau} couche(s) de Body Shade\n`;
+    protocol += `  ${COFFRET_DATA.mapping[l0.groupe]} constituent la BASE maquillage adaptée.\n`;
+    protocol += `  Le Body Shade modifie L*, a* ET b* simultanément — on ne peut pas dissocier ces effets.\n\n`;
     protocol += `  ═══════════════════════════════════════════════════════════\n\n`;
     
-    protocol += `> ÉCARTS À COMPENSER (depuis ${l0.code})\n`;
-    protocol += `  La dent du patient diffère de la pastille brute comme suit :\n\n`;
+    protocol += `> PROTOCOLE EN 3 PHASES (approche holistique)\n\n`;
     
-    if (Math.abs(deltaL) > 0.3) {
-        protocol += `  ■ LUMINOSITÉ (L*) : ${deltaL > 0 ? '+' : ''}${deltaL.toFixed(2)}\n`;
-        if (deltaL > 0) {
-            protocol += `    → La dent est PLUS CLAIRE que ${l0.code}.\n`;
-            protocol += `    → DEPUIS LA PASTILLE BRUTE : ne pas trop maquiller.\n`;
-            protocol += `      • Appliquer une couche TRÈS FINE de Body Shade\n`;
-            protocol += `      • Diluer avec Diluting Liquide (30-50%)\n`;
-            protocol += `      • Ou utiliser uniquement L-N (Neutral) + glaçage\n`;
-            protocol += `      • Éviter les Stains foncés (SPS-13, SPS-19, SPS-20)\n`;
+    protocol += `  PHASE 1 — BODY SHADE (correction globale L*+a*+b*)\n`;
+    protocol += `  ─────────────────────────────────────────────────────────\n`;
+    protocol += `  Produit : ${COFFRET_DATA.mapping[l0.groupe]}\n`;
+    protocol += `  Nombre de couches : ${strategie.niveauRecommande} (${proto.couches})\n`;
+    protocol += `  Préparation : ${proto.preparation}\n\n`;
+    protocol += `  → Objectif : le Body Shade corrige le GROS du décalage chromatique.\n`;
+    if (deltaL < -1.5) {
+        protocol += `  → La dent est NETTEMENT PLUS FONCÉE : appliquer Body Shade en couche ÉPAISSE, non dilué.\n`;
+    } else if (deltaL > 1.0) {
+        protocol += `  → La dent est PLUS CLAIRE : appliquer Body Shade en couche TRÈS FINE ou diluer 50%.\n`;
+    } else {
+        protocol += `  → Luminosité proche : appliquer Body Shade en couche STANDARD.\n`;
+    }
+    protocol += `  → Ne PAS chercher à corriger a* ou b* séparément à ce stade.\n\n`;
+    
+    if (strategie.niveauRecommande > 0) {
+        protocol += `  PHASE 2 — CARACTÉRISATION SPS (affinement)\n`;
+        protocol += `  ─────────────────────────────────────────────────────────\n`;
+        if (spsList.length === 0) {
+            protocol += `  → Aucun SPS stain spécifique nécessaire après Body Shade.\n`;
+            protocol += `    Le résidu chromatique est faible ; passer directement à la Phase 3.\n`;
         } else {
-            protocol += `    → La dent est PLUS FONCÉE que ${l0.code}.\n`;
-            protocol += `    → DEPUIS LA PASTILLE BRUTE : maquiller pour assombrir.\n`;
-            protocol += `      • Appliquer Body Shade en couche ÉPAISSE\n`;
-            protocol += `      • Ne pas diluer (Body Shade pur)\n`;
-            protocol += `      • Ajouter SPS-13 Brown ou SPS-19 Grey si nécessaire\n`;
-            protocol += `      • Envisager une 2ème couche si ΔE > 2.5\n`;
+            protocol += `  → Après la couche Body Shade, affiner la direction chromatique avec :\n`;
+            spsList.forEach(s => { protocol += `    • ${s}\n`; });
         }
-        protocol += `\n`;
+        protocol += `\n  → RÈGLE D'OR : un SPS stain modifie a*, b* ET C* en même temps.\n`;
+        protocol += `    Ne jamais cumuler SPS foncé + Body Shade épais sans contrôle Optishade intermédiaire.\n\n`;
     }
     
-    if (Math.abs(deltaa) > 0.2) {
-        protocol += `  ■ AXE ROUGE-VERT (a*) : ${deltaa > 0 ? '+' : ''}${deltaa.toFixed(2)}\n`;
-        if (deltaa > 0) {
-            protocol += `    → La dent est plus ROUGE que ${l0.code}.\n`;
-            protocol += `    → DEPUIS LA PASTILLE BRUTE : renforcer le rouge/warm.\n`;
-            protocol += `      • SPS-14 Pink sur zones cervicales\n`;
-            protocol += `      • SPS-8 Orange pour un rouge profond\n`;
-            protocol += `      • Éviter les pigments froids (Blue-Grey)\n`;
-        } else {
-            protocol += `    → La dent est plus VERTE que ${l0.code}.\n`;
-            protocol += `    → DEPUIS LA PASTILLE BRUTE : atténuer le rouge.\n`;
-            protocol += `      • Réduire SPS-14 Pink et SPS-8 Orange\n`;
-            protocol += `      • Privilégier les tons neutres (L-N, L-6)\n`;
-        }
-        protocol += `\n`;
-    }
-    
-    if (Math.abs(deltab) > 0.2) {
-        protocol += `  ■ AXE JAUNE-BLEU (b*) : ${deltab > 0 ? '+' : ''}${deltab.toFixed(2)}\n`;
-        if (deltab > 0) {
-            protocol += `    → La dent est plus JAUNE que ${l0.code}.\n`;
-            protocol += `    → DEPUIS LA PASTILLE BRUTE : renforcer le jaune.\n`;
-            protocol += `      • SPS-7 Yellow sur cervical et moyen\n`;
-            protocol += `      • SPS-8 Orange pour un jaune mature\n`;
-            protocol += `      • Réduire les effets blancs (L-10)\n`;
-        } else {
-            protocol += `    → La dent est moins jaune (plus bleue) que ${l0.code}.\n`;
-            protocol += `    → DEPUIS LA PASTILLE BRUTE : atténuer le jaune.\n`;
-            protocol += `      • Réduire SPS-7 Yellow\n`;
-            protocol += `      • SPS-17 Blue-Grey en incisal pour translucidité\n`;
-            protocol += `      • Privilégier L-9, L-10 (effets clairs/blancs)\n`;
-        }
-        protocol += `\n`;
-    }
-    
-    if (Math.abs(deltaC) > 0.3) {
-        protocol += `  ■ SATURATION (Chroma C*) : ${deltaC > 0 ? '+' : ''}${deltaC.toFixed(2)}\n`;
-        if (deltaC > 0) {
-            protocol += `    → La dent est PLUS SATURÉE que ${l0.code}.\n`;
-            protocol += `    → DEPUIS LA PASTILLE BRUTE : intensifier les pigments.\n`;
-            protocol += `      • Body Shade SANS dilution\n`;
-            protocol += `      • SPS Stains purs (peu de Glaze Liquide)\n`;
-            protocol += `      • Concentrer sur 1/3 cervical (plus saturé)\n`;
-        } else {
-            protocol += `    → La dent est MOINS SATURÉE que ${l0.code}.\n`;
-            protocol += `    → DEPUIS LA PASTILLE BRUTE : atténuer les pigments.\n`;
-            protocol += `      • Diluer Body Shade avec Diluting Liquide\n`;
-            protocol += `      • Couche UNIQUE et fine\n`;
-            protocol += `      • L-OP opalescent pour "casser" le chroma\n`;
-        }
-        protocol += `\n`;
-    }
-    
-    if (Math.abs(deltaH) > 0.5) {
-        protocol += `  ■ TEINTE (Hue H*) : ${deltaH.toFixed(2)}\n`;
-        protocol += `    → Décalage de teinte détecté depuis ${l0.code}.\n`;
-        protocol += `    → DEPUIS LA PASTILLE BRUTE : ajuster la direction chromatique.\n`;
-        protocol += `      • Analyser si décalage vers rouge (a*) ou jaune (b*)\n`;
-        protocol += `      • Rouge : SPS-14 Pink + réduction jaune\n`;
-        protocol += `      • Jaune : SPS-7 Yellow + SPS-8 Orange\n`;
-        protocol += `      • Orange : SPS-8 + SPS-13 Brown\n`;
-        protocol += `      • Vérifier sous lumière naturelle et artificielle\n`;
-        protocol += `\n`;
-    }
-    
-    if (Math.abs(deltaL) <= 0.3 && Math.abs(deltaa) <= 0.2 && Math.abs(deltab) <= 0.2 && Math.abs(deltaC) <= 0.3 && Math.abs(deltaH) <= 0.5) {
-        protocol += `  ✓ Écarts négligeables — Protocole standard depuis ${l0.code} suffisant.\n\n`;
-    }
-    
-    protocol += `  ═══════════════════════════════════════════════════════════\n\n`;
-    
-    protocol += `> PROTOCOLE DE MAQUILLAGE (Niveau L${strategie.niveauRecommande})\n`;
-    protocol += `  Technique : ${proto.nom}\n`;
-    protocol += `  Préparation : ${proto.preparation}\n`;
-    protocol += `  Produit principal : ${proto.produit} ${COFFRET_DATA.mapping[l0.groupe]}\n`;
-    protocol += `  Application : ${proto.couches}\n`;
-    protocol += `  Contrôle : ${proto.controle}\n`;
-    protocol += `  Cuisson : ${proto.cuisson}\n\n`;
+    protocol += `  PHASE 3 — ÉMAIL + GLAÇAGE (finalisation)\n`;
+    protocol += `  ─────────────────────────────────────────────────────────\n`;
+    protocol += `  → Effet émail recommandé : ${emailRec}\n`;
+    protocol += `  → Glaçage : Lustre Paste Neutral (L-N) ou Neutral FLUO (L-NFL)\n`;
+    protocol += `  → Cuisson finale selon protocole Artis®\n\n`;
     
     protocol += `> ÉTAPES CONCRÈTES\n`;
-    protocol += `  1. Usiner la prothèse en zircone ${l0.groupe} (4Y-PSZ Cercon ht ML)\n`;
-    protocol += `  2. Frittage selon protocole fabricant\n`;
-    protocol += `  3. Nettoyage à l'IPA 96%\n`;
+    protocol += `  1. Usiner la prothèse en zircone ${l0.groupe} (4Y-PSZ)\n`;
+    protocol += `  2. Frittage + nettoyage IPA 96%\n`;
     if (strategie.niveauRecommande === 0) {
-        protocol += `  4. Application de L-N (Neutral) en couche fine\n`;
-        protocol += `  5. Cuisson de connexion + glaçage Lustre NL\n`;
+        protocol += `  3. Application L-N + glaçage (pas de Body Shade)\n`;
     } else if (strategie.niveauRecommande === 1) {
-        protocol += `  4. Application de 1 couche Body Shade ${COFFRET_DATA.mapping[l0.groupe]}\n`;
-        protocol += `     (ajuster épaisseur selon les écarts L*/C* ci-dessus)\n`;
-        protocol += `  5. Séchage à l'air libre\n`;
-        protocol += `  6. Mesure Optishade (ΔE cible 1.2–1.5 par rapport à ${l0.code})\n`;
-        protocol += `  7. Cuisson effets + glaçage (Artis®)\n`;
+        protocol += `  3. 1 couche Body Shade ${COFFRET_DATA.mapping[l0.groupe]} (ajuster épaisseur)\n`;
+        protocol += `  4. Séchage → contrôle Optishade (ΔE cible 1.2–1.5)\n`;
+        protocol += `  5. SPS stains si besoin (Phase 2)\n`;
+        protocol += `  6. Émail + glaçage → cuisson Artis®\n`;
     } else {
-        protocol += `  4. 1ère couche Body Shade ${COFFRET_DATA.mapping[l0.groupe]}\n`;
-        protocol += `  5. 1ère cuisson effets\n`;
-        protocol += `  6. 2ème couche Body Shade (ajuster selon les écarts)\n`;
-        protocol += `  7. Séchage + mesure Optishade (ΔE cible 1.2–1.5)\n`;
-        protocol += `  8. 2ème cuisson + glaçage (Artis®)\n`;
+        protocol += `  3. 1ère couche Body Shade ${COFFRET_DATA.mapping[l0.groupe]}\n`;
+        protocol += `  4. 1ère cuisson effets\n`;
+        protocol += `  5. 2ème couche Body Shade (ajuster selon résidu)\n`;
+        protocol += `  6. Séchage → contrôle Optishade (ΔE cible 1.2–1.5)\n`;
+        protocol += `  7. SPS stains si besoin (Phase 2)\n`;
+        protocol += `  8. Émail + glaçage → cuisson finale Artis®\n`;
     }
     protocol += `\n`;
     protocol += `> PRODUITS GC INITIAL RECOMMANDÉS\n`;
