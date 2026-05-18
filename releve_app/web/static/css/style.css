@@ -325,13 +325,47 @@ tbody tr.highlight td { font-weight: 600; color: var(--info); }
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    border: 3px solid var(--border);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 2px solid rgba(255,255,255,0.5);
+    box-shadow:
+        inset 0 3px 6px rgba(255,255,255,0.8),
+        inset 0 -4px 8px rgba(0,0,0,0.2),
+        0 6px 16px rgba(0,0,0,0.2),
+        0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.3s;
+    position: relative;
 }
 
-.comparison-item .pastille-img.measured { border-color: var(--info); }
-.comparison-item .pastille-img.reference { border-color: var(--gold); }
+/* Effet vitrifié / verre pour les pastilles de comparaison */
+.comparison-item .pastille-img.glass::before {
+    content: '';
+    position: absolute;
+    top: 8%;
+    left: 15%;
+    width: 30%;
+    height: 20%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+    transform: rotate(-20deg);
+    filter: blur(1.5px);
+    pointer-events: none;
+}
+
+.comparison-item .pastille-img.glass::after {
+    content: '';
+    position: absolute;
+    bottom: 12%;
+    right: 18%;
+    width: 22%;
+    height: 14%;
+    border-radius: 50%;
+    background: linear-gradient(315deg, rgba(255,255,255,0.6) 0%, transparent 70%);
+    transform: rotate(15deg);
+    filter: blur(2.5px);
+    pointer-events: none;
+}
+
+.comparison-item .pastille-img.measured { border-color: rgba(59,130,246,0.5); }
+.comparison-item .pastille-img.reference { border-color: rgba(217,119,6,0.5); }
 
 .comparison-label {
     font-size: 0.8125rem;
@@ -345,10 +379,54 @@ tbody tr.highlight td { font-weight: 600; color: var(--info); }
     font-variant-numeric: tabular-nums;
 }
 
+.comparison-middle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
 .comparison-arrow {
     font-size: 1.5rem;
     color: var(--text-muted);
 }
+
+.comparison-delta {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.comparison-thresholds {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.threshold {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid;
+}
+
+.threshold.pt {
+    color: #16a34a;
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
+.threshold.at {
+    color: #ea580c;
+    background: #ffedd5;
+    border-color: #fdba74;
+}
+
+.comparison-delta.delta-perfect { color: #16a34a; }
+.comparison-delta.delta-acceptable { color: #ea580c; }
+.comparison-delta.delta-poor { color: #dc2626; }
 
 /* === BARRES D'EFFORT === */
 .effort-bars { display: flex; flex-direction: column; gap: 20px; }

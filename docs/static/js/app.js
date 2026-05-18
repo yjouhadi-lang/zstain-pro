@@ -261,13 +261,24 @@ function renderTeintier(bestCode, measured) {
     });
 }
 
-function renderComparison(measured, ref) {
+function renderComparison(result) {
+    const measured = result.measured;
+    const ref = result.bestMatch;
     const mRgb = labToRgb(measured.L, measured.a, measured.b);
     const rRgb = labToRgb(ref.L, ref.a, ref.b);
     document.getElementById('comp-measured-img').style.background = rgbToHex(mRgb.r, mRgb.g, mRgb.b);
     document.getElementById('comp-ref-img').style.background = rgbToHex(rRgb.r, rRgb.g, rRgb.b);
     document.getElementById('comp-measured-lab').textContent = `L*=${measured.L.toFixed(1)} a*=${measured.a.toFixed(1)} b*=${measured.b.toFixed(1)}`;
     document.getElementById('comp-ref-lab').textContent = `L*=${ref.L.toFixed(1)} a*=${ref.a.toFixed(1)} b*=${ref.b.toFixed(1)}`;
+    
+    // ΔE avec coloration selon seuils PT/AT
+    const deltaE = result.deltaE;
+    const deltaEl = document.getElementById('comp-delta-e');
+    deltaEl.textContent = `ΔE = ${deltaE.toFixed(2)}`;
+    deltaEl.className = 'comparison-delta';
+    if (deltaE < 1.2) deltaEl.classList.add('delta-perfect');
+    else if (deltaE < 3.7) deltaEl.classList.add('delta-acceptable');
+    else deltaEl.classList.add('delta-poor');
 }
 
 function renderEffortBars(result, strategie) {
@@ -554,7 +565,7 @@ function updateUI(result) {
     const strategie = determinerStrategie(result);
     
     renderTeintier(ref.code, result.measured);
-    renderComparison(result.measured, ref);
+    renderComparison(result);
     renderEffortBars(result, strategie);
     
     document.querySelector('.match-code').textContent = ref.code;
