@@ -408,11 +408,11 @@ function generateProtocol(result, strategie) {
     const de76 = deltaE_cie76(dent.L, dent.a, dent.b, l0.L, l0.a, l0.b);
     const deltaH = Math.sqrt(Math.max(0, de76**2 - deltaL**2 - deltaC**2));
     
-    let protocol = `► RÉSULTAT DU MATCHING\n`;
+    let protocol = `> RÉSULTAT DU MATCHING\n`;
     protocol += `  Closest match : ${best.code} (${best.description})\n`;
     protocol += `  ΔE avec la pastille la plus proche : ${result.deltaE.toFixed(2)} — ${interp.text}\n\n`;
     
-    protocol += `► STRATÉGIE DE DÉPART (logique Zstain Pro)\n`;
+    protocol += `> STRATÉGIE DE DÉPART (logique Zstain Pro)\n`;
     protocol += `  ═══════════════════════════════════════════════════════════\n\n`;
     protocol += `  PRINCIPE : On part TOUJOURS d'une pastille brute (niveau L0),\n`;
     protocol += `  puis on maquille pour approcher la teinte de la dent du patient.\n\n`;
@@ -426,7 +426,7 @@ function generateProtocol(result, strategie) {
     
     protocol += `  ═══════════════════════════════════════════════════════════\n\n`;
     
-    protocol += `► ÉCARTS À COMPENSER (depuis ${l0.code})\n`;
+    protocol += `> ÉCARTS À COMPENSER (depuis ${l0.code})\n`;
     protocol += `  La dent du patient diffère de la pastille brute comme suit :\n\n`;
     
     if (Math.abs(deltaL) > 0.3) {
@@ -520,7 +520,7 @@ function generateProtocol(result, strategie) {
     
     protocol += `  ═══════════════════════════════════════════════════════════\n\n`;
     
-    protocol += `► PROTOCOLE DE MAQUILLAGE (Niveau L${strategie.niveauRecommande})\n`;
+    protocol += `> PROTOCOLE DE MAQUILLAGE (Niveau L${strategie.niveauRecommande})\n`;
     protocol += `  Technique : ${proto.nom}\n`;
     protocol += `  Préparation : ${proto.preparation}\n`;
     protocol += `  Produit principal : ${proto.produit} ${COFFRET_DATA.mapping[l0.groupe]}\n`;
@@ -528,7 +528,7 @@ function generateProtocol(result, strategie) {
     protocol += `  Contrôle : ${proto.controle}\n`;
     protocol += `  Cuisson : ${proto.cuisson}\n\n`;
     
-    protocol += `► ÉTAPES CONCRÈTES\n`;
+    protocol += `> ÉTAPES CONCRÈTES\n`;
     protocol += `  1. Usiner la prothèse en zircone ${l0.groupe} (4Y-PSZ Cercon ht ML)\n`;
     protocol += `  2. Frittage selon protocole fabricant\n`;
     protocol += `  3. Nettoyage à l'IPA 96%\n`;
@@ -549,7 +549,7 @@ function generateProtocol(result, strategie) {
         protocol += `  8. 2ème cuisson + glaçage (Artis®)\n`;
     }
     protocol += `\n`;
-    protocol += `► PRODUITS GC INITIAL RECOMMANDÉS\n`;
+    protocol += `> PRODUITS GC INITIAL RECOMMANDÉS\n`;
     protocol += `  Body Shade : ${COFFRET_DATA.mapping[l0.groupe]}\n`;
     protocol += `  Effort de saturation : ${result.effortSaturation.toFixed(1)}%\n`;
     
