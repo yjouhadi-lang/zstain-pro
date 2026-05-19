@@ -78,7 +78,7 @@ ZSTAIN_REFERENCES: List[ZstainReference] = [
         L=84.43,
         a=2.15,
         b=17.17,
-        deltaE_consecutif=1.27,
+        deltaE_consecutif=1.75,
     ),
     ZstainReference(
         code="A1L2",
@@ -86,7 +86,7 @@ ZSTAIN_REFERENCES: List[ZstainReference] = [
         L=83.94,
         a=2.49,
         b=17.77,
-        deltaE_consecutif=1.70,
+        deltaE_consecutif=0.85,
     ),
     # --- GROUPE A2 ---
     ZstainReference(
@@ -95,7 +95,7 @@ ZSTAIN_REFERENCES: List[ZstainReference] = [
         L=82.80,
         a=2.41,
         b=19.70,
-        deltaE_consecutif=None,
+        deltaE_consecutif=2.24,
     ),
     ZstainReference(
         code="A2L1",
@@ -103,7 +103,7 @@ ZSTAIN_REFERENCES: List[ZstainReference] = [
         L=82.37,
         a=2.97,
         b=22.07,
-        deltaE_consecutif=2.46,
+        deltaE_consecutif=2.47,
     ),
     # --- GROUPE A3 ---
     ZstainReference(
@@ -112,7 +112,7 @@ ZSTAIN_REFERENCES: List[ZstainReference] = [
         L=81.23,
         a=4.47,
         b=21.90,
-        deltaE_consecutif=None,
+        deltaE_consecutif=1.89,
     ),
     ZstainReference(
         code="A3L1",
@@ -120,7 +120,7 @@ ZSTAIN_REFERENCES: List[ZstainReference] = [
         L=78.88,
         a=5.77,
         b=23.50,
-        deltaE_consecutif=3.00,
+        deltaE_consecutif=3.13,
     ),
     ZstainReference(
         code="A3L2",
@@ -128,7 +128,7 @@ ZSTAIN_REFERENCES: List[ZstainReference] = [
         L=77.13,
         a=5.47,
         b=25.48,
-        deltaE_consecutif=3.20,
+        deltaE_consecutif=2.66,
     ),
 ]
 
