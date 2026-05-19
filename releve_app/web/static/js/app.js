@@ -555,7 +555,7 @@ function generateProtocol(result, strategie) {
     return protocol;
 }
 
-function updateUI(result) {
+function updateUI(result, mode) {
     document.getElementById('empty-state').style.display = 'none';
     
     // Détection blanchiment : L* patient > pastille la plus claire du teintier
@@ -577,6 +577,11 @@ function updateUI(result) {
     const interp = interpretDeltaE(result.deltaE);
     const ref = result.bestMatch;
     const strategie = determinerStrategie(result);
+    
+    // Stocker pour le bouton PDF
+    window.lastResult = result;
+    window.lastStrategie = strategie;
+    window.lastMode = mode || 'digital';
     
     renderTeintier(ref.code, result.measured);
     renderComparison(result);
@@ -616,7 +621,9 @@ function handleCalculate() {
     if (L < 0 || L > 100) { alert('L* doit être entre 0 et 100.'); return; }
     
     const result = findClosestMatch(L, a, b, useCIEDE2000);
-    updateUI(result);
+    const activeTab = document.querySelector('.tab-btn.active');
+    const mode = activeTab ? activeTab.dataset.tab : 'digital';
+    updateUI(result, mode);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -652,4 +659,538 @@ document.addEventListener('DOMContentLoaded', () => {
             handleCalculate();
         });
     }
+    
+    // === ONGLETS ===
+    initTabs();
+    
+    // === PDF REPORT ===
+    const btnPdf = document.getElementById('btn-pdf-report');
+    if (btnPdf) {
+        btnPdf.addEventListener('click', () => {
+            if (!window.lastResult || !window.lastStrategie) {
+                alert('Veuillez d\'abord effectuer une analyse.');
+                return;
+            }
+            generatePDFReport(window.lastResult, window.lastStrategie, window.lastMode);
+        });
+    }
+    
+    // === CONTRÔLE DE MAQUILLAGE ===
+    initControlModule();
 });
+
+
+// ============================================================================
+// ONGLETS
+// ============================================================================
+
+function initTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.dataset.tab;
+            
+            // Mettre à jour les boutons
+            tabBtns.forEach(b => b.classList.toggle('active', b === btn));
+            
+            // Afficher/masquer les workspaces
+            document.getElementById('workspace-analysis').classList.toggle('active', tab !== 'controle');
+            document.getElementById('workspace-controle').classList.toggle('active', tab === 'controle');
+            
+            // Gérer les input-panels dans l'analyse
+            document.getElementById('input-digital').classList.toggle('active', tab === 'digital');
+            document.getElementById('input-visuel').classList.toggle('active', tab === 'visuel');
+            
+            // Mettre à jour le mode pour le PDF
+            if (tab === 'digital') window.lastMode = 'digital';
+            if (tab === 'visuel') window.lastMode = 'visuel';
+        });
+    });
+}
+
+// ============================================================================
+// GÉNÉRATION PDF
+// ============================================================================
+
+function generateCaseId() {
+    const d = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `ZSP-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${rand}`;
+}
+
+function generatePDFReport(result, strategie, mode) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const caseId = generateCaseId();
+    const dateStr = new Date().toLocaleString('fr-FR');
+    const dent = result.measured;
+    const ref = result.bestMatch;
+    const l0 = strategie.pointDepart;
+    const interp = interpretDeltaE(result.deltaE);
+    
+    // En-tête
+    doc.setFontSize(18);
+    doc.setTextColor(31, 41, 55);
+    doc.text('Z-Stain Pro v3.0 — Rapport d\'analyse colorimétrique', 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(107, 114, 128);
+    doc.text(`ID du cas : ${caseId}     Date : ${dateStr}`, 14, 28);
+    doc.text(`Mode de relevé : ${mode === 'visuel' ? 'Visuel (Z-Stain Pro)' : 'Digital (Optishade)'}`, 14, 33);
+    
+    // Ligne séparatrice
+    doc.setDrawColor(229, 231, 235);
+    doc.line(14, 36, 196, 36);
+    
+    let y = 44;
+    
+    // Section Relevé
+    doc.setFontSize(13);
+    doc.setTextColor(31, 41, 55);
+    doc.text('1. Relevé initial', 14, y);
+    y += 8;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(55, 65, 81);
+    doc.text(`L* = ${dent.L.toFixed(2)}    a* = ${dent.a.toFixed(2)}    b* = ${dent.b.toFixed(2)}`, 14, y);
+    y += 6;
+    const useCIEDE2000 = document.getElementById('chk-ciede2000').checked;
+    doc.text(`Mode ΔE : ${useCIEDE2000 ? 'CIEDE2000' : 'CIE76'}`, 14, y);
+    y += 12;
+    
+    // Section Matching
+    doc.setFontSize(13);
+    doc.setTextColor(31, 41, 55);
+    doc.text('2. Résultat du matching', 14, y);
+    y += 8;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(55, 65, 81);
+    doc.text(`Pastille cible : ${ref.code} — ${ref.description}`, 14, y);
+    y += 6;
+    doc.text(`ΔE patient vs cible : ${result.deltaE.toFixed(2)} — ${interp.text}`, 14, y);
+    y += 12;
+    
+    // Pastille de base
+    doc.setFontSize(13);
+    doc.text('3. Pastille de base (point de départ)', 14, y);
+    y += 8;
+    
+    const deBase = l0 ? deltaE_cie76(ref.L, ref.a, ref.b, l0.L, l0.a, l0.b) : 0;
+    doc.setFontSize(10);
+    doc.text(`${l0 ? l0.code : '—'} — ${l0 ? l0.description : ''}`, 14, y);
+    y += 6;
+    doc.text(`ΔE cible vs base (L0) : ${deBase.toFixed(2)}`, 14, y);
+    y += 12;
+    
+    // Tableau des écarts
+    doc.setFontSize(13);
+    doc.text('4. Analyse des écarts (par rapport au L0)', 14, y);
+    y += 8;
+    
+    const deltaL = dent.L - l0.L;
+    const deltaa = dent.a - l0.a;
+    const deltab = dent.b - l0.b;
+    const deltaC = chroma(dent.a, dent.b) - chroma(l0.a, l0.b);
+    const de76 = deltaE_cie76(dent.L, dent.a, dent.b, l0.L, l0.a, l0.b);
+    const deltaH = Math.sqrt(Math.max(0, de76**2 - deltaL**2 - deltaC**2));
+    
+    doc.autoTable({
+        startY: y,
+        head: [['Paramètre', 'Écart', 'Direction']],
+        body: [
+            ['Luminosité L*', `${deltaL > 0 ? '+' : ''}${deltaL.toFixed(2)}`, deltaL > 0 ? 'Plus clair' : (deltaL < 0 ? 'Plus foncé' : 'Identique')],
+            ['Rouge-Vert a*', `${deltaa > 0 ? '+' : ''}${deltaa.toFixed(2)}`, deltaa > 0 ? 'Plus rouge' : (deltaa < 0 ? 'Plus vert' : 'Identique')],
+            ['Jaune-Bleu b*', `${deltab > 0 ? '+' : ''}${deltab.toFixed(2)}`, deltab > 0 ? 'Plus jaune' : (deltab < 0 ? 'Plus bleu' : 'Identique')],
+            ['Saturation C*', `${deltaC > 0 ? '+' : ''}${deltaC.toFixed(2)}`, deltaC > 0 ? 'Plus saturé' : (deltaC < 0 ? 'Moins saturé' : 'Identique')],
+            ['Teinte H*', `${deltaH.toFixed(2)}`, 'Décalage de teinte'],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [55, 65, 81], textColor: 255, fontSize: 9 },
+        bodyStyles: { fontSize: 9, textColor: [31, 41, 55] },
+        styles: { cellPadding: 3 },
+        margin: { left: 14, right: 14 },
+    });
+    
+    y = doc.lastAutoTable.finalY + 12;
+    
+    // Si on dépasse la page, nouvelle page
+    if (y > 260) {
+        doc.addPage();
+        y = 20;
+    }
+    
+    // Protocole
+    doc.setFontSize(13);
+    doc.text('5. Protocole de maquillage recommandé', 14, y);
+    y += 8;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(55, 65, 81);
+    const protoLines = generateProtocol(result, strategie).split('\n');
+    protoLines.forEach(line => {
+        if (y > 280) { doc.addPage(); y = 20; }
+        doc.text(line, 14, y);
+        y += 5;
+    });
+    
+    y += 8;
+    if (y > 260) { doc.addPage(); y = 20; }
+    
+    // Produits GC
+    doc.setFontSize(13);
+    doc.setTextColor(31, 41, 55);
+    doc.text('6. Produits GC Initial recommandés', 14, y);
+    y += 8;
+    
+    const bodyCode = COFFRET_DATA.mapping[strategie.groupeDepart] || 'L-N';
+    const stains = (COFFRET_DATA.stains[strategie.groupeDepart] || []).map(s => `${s.code} ${s.nom}`).join(', ');
+    const enamel = (COFFRET_DATA.enamel[strategie.groupeDepart] || []).map(e => `${e.code} ${e.nom}`).join(', ');
+    
+    doc.setFontSize(9);
+    doc.text(`Body Shade : ${bodyCode} (${strategie.niveauRecommande} couche(s))`, 14, y);
+    y += 5;
+    doc.text(`Stains SPS : ${stains || 'Aucun spécifique'}`, 14, y);
+    y += 5;
+    doc.text(`Effets Émail : ${enamel || 'Standard'}`, 14, y);
+    y += 12;
+    
+    // Pied de page clinique
+    doc.setDrawColor(229, 231, 235);
+    doc.line(14, y, 196, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.setTextColor(156, 163, 175);
+    doc.text('Service de Prothèse Conjointe — CCTD – CHU Ibn Rochd', 14, y);
+    y += 5;
+    doc.text('Dr. Hachami Imane | Dr. Mazzir Nouhaila | Pr. Jouhadi El Mehdi', 14, y);
+    
+    // Espace signature
+    y += 12;
+    doc.setTextColor(107, 114, 128);
+    doc.text('Signature du praticien :', 14, y);
+    doc.line(60, y, 180, y);
+    
+    // Nouvelle page pour le bloc machine
+    doc.addPage();
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('---ZSTAIN-REPORT-DATA---', 14, 20);
+    
+    const reportData = {
+        caseId: caseId,
+        date: new Date().toISOString(),
+        mode: mode || 'digital',
+        L: dent.L,
+        a: dent.a,
+        b: dent.b,
+        ciede2000: document.getElementById('chk-ciede2000').checked,
+        bestMatch: ref.code,
+        deltaE: result.deltaE,
+        baseL0: l0 ? l0.code : null,
+        deltaEBase: deBase,
+        strategie: {
+            groupeDepart: strategie.groupeDepart,
+            niveauRecommande: strategie.niveauRecommande,
+            pointDepart: l0 ? l0.code : null,
+            deltaDepuisL0: strategie.deltaDepuisL0,
+        },
+        protocol: generateProtocol(result, strategie),
+    };
+    
+    const jsonStr = JSON.stringify(reportData);
+    // Split JSON sur plusieurs lignes pour éviter les problèmes de largeur
+    const jsonLines = doc.splitTextToSize(jsonStr, 180);
+    doc.text(jsonLines, 14, 28);
+    doc.text('---END-ZSTAIN-REPORT-DATA---', 14, 28 + jsonLines.length * 4 + 4);
+    
+    doc.save(`ZstainPro_${caseId}.pdf`);
+}
+
+// ============================================================================
+// CONTRÔLE DE MAQUILLAGE
+// ============================================================================
+
+let currentCaseData = null;
+
+function initControlModule() {
+    // Configuration pdfjs worker
+    if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    
+    // Upload zone
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('input-pdf-upload');
+    const uploadPrompt = document.getElementById('upload-prompt');
+    const uploadStatus = document.getElementById('upload-status');
+    const uploadFilename = document.querySelector('.upload-filename');
+    const uploadRemove = document.getElementById('upload-remove');
+    
+    if (uploadZone && fileInput) {
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handlePDFUpload(files[0]);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handlePDFUpload(e.target.files[0]);
+        });
+    }
+    
+    if (uploadRemove) {
+        uploadRemove.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentCaseData = null;
+            if (fileInput) fileInput.value = '';
+            if (uploadPrompt) uploadPrompt.style.display = 'block';
+            if (uploadStatus) uploadStatus.style.display = 'none';
+            document.getElementById('control-recap').style.display = 'none';
+            document.getElementById('control-result').style.display = 'none';
+        });
+    }
+    
+    // Bouton analyse contrôle
+    const btnAnalyze = document.getElementById('btn-control-analyze');
+    if (btnAnalyze) {
+        btnAnalyze.addEventListener('click', handleControlAnalyze);
+    }
+    
+    document.querySelectorAll('#control-L, #control-a, #control-b').forEach(input => {
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleControlAnalyze(); });
+    });
+}
+
+async function handlePDFUpload(file) {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+        alert('Veuillez sélectionner un fichier PDF.');
+        return;
+    }
+    
+    document.querySelector('.upload-filename').textContent = file.name;
+    document.getElementById('upload-prompt').style.display = 'none';
+    document.getElementById('upload-status').style.display = 'flex';
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = await parsePDFReport(e.target.result);
+            if (data) {
+                currentCaseData = data;
+                renderCaseRecap(data);
+            } else {
+                alert('Impossible de lire les données du rapport. Assurez-vous que le PDF a été généré par Z-Stain Pro.');
+                document.getElementById('upload-prompt').style.display = 'block';
+                document.getElementById('upload-status').style.display = 'none';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erreur lors de la lecture du PDF : ' + err.message);
+            document.getElementById('upload-prompt').style.display = 'block';
+            document.getElementById('upload-status').style.display = 'none';
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+async function parsePDFReport(arrayBuffer) {
+    if (typeof pdfjsLib === 'undefined') {
+        throw new Error('La librairie de lecture PDF n\'est pas chargée.');
+    }
+    
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+    }
+    
+    const match = fullText.match(/---ZSTAIN-REPORT-DATA---\s*([\s\S]*?)\s*---END-ZSTAIN-REPORT-DATA---/);
+    if (!match) return null;
+    
+    try {
+        return JSON.parse(match[1].trim());
+    } catch (e) {
+        console.error('JSON parse error:', e);
+        return null;
+    }
+}
+
+function renderCaseRecap(data) {
+    const recap = document.getElementById('control-recap');
+    recap.style.display = 'block';
+    
+    document.getElementById('recap-case-id').textContent = data.caseId || '—';
+    document.getElementById('recap-date').textContent = data.date ? new Date(data.date).toLocaleString('fr-FR') : '—';
+    document.getElementById('recap-lab-initial').textContent = `L=${data.L.toFixed(2)} a=${data.a.toFixed(2)} b=${data.b.toFixed(2)}`;
+    document.getElementById('recap-cible').textContent = data.bestMatch || '—';
+    document.getElementById('recap-deltaE').textContent = data.deltaE !== undefined ? data.deltaE.toFixed(2) : '—';
+    
+    const proto = data.strategie;
+    document.getElementById('recap-protocole').textContent = proto 
+        ? `${proto.groupeDepart} — ${proto.niveauRecommande} couche(s) Body Shade`
+        : '—';
+}
+
+function handleControlAnalyze() {
+    if (!currentCaseData) {
+        alert('Veuillez d\'abord charger le rapport PDF du cas initial.');
+        return;
+    }
+    
+    const newL = parseFloat(document.getElementById('control-L').value.replace(',', '.'));
+    const newA = parseFloat(document.getElementById('control-a').value.replace(',', '.'));
+    const newB = parseFloat(document.getElementById('control-b').value.replace(',', '.'));
+    const useCIEDE2000 = document.getElementById('chk-control-ciede2000').checked;
+    
+    if (isNaN(newL) || isNaN(newA) || isNaN(newB)) {
+        alert('Veuillez saisir des valeurs numériques valides pour le nouveau relevé.');
+        return;
+    }
+    
+    renderControlResult(currentCaseData, newL, newA, newB, useCIEDE2000);
+}
+
+function renderControlResult(caseData, newL, newA, newB, useCIEDE2000) {
+    const resultSection = document.getElementById('control-result');
+    resultSection.style.display = 'block';
+    
+    // Couleurs
+    const initialRgb = labToRgb(caseData.L, caseData.a, caseData.b);
+    const newRgb = labToRgb(newL, newA, newB);
+    document.getElementById('control-img-initial').style.background = rgbToHex(initialRgb.r, initialRgb.g, initialRgb.b);
+    document.getElementById('control-img-new').style.background = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+    
+    document.getElementById('control-lab-initial').textContent = `L*=${caseData.L.toFixed(1)} a*=${caseData.a.toFixed(1)} b*=${caseData.b.toFixed(1)}`;
+    document.getElementById('control-lab-new').textContent = `L*=${newL.toFixed(1)} a*=${newA.toFixed(1)} b*=${newB.toFixed(1)}`;
+    
+    // ΔE entre nouveau relevé et patient initial
+    const deltaE = useCIEDE2000
+        ? deltaE_ciede2000(newL, newA, newB, caseData.L, caseData.a, caseData.b)
+        : deltaE_cie76(newL, newA, newB, caseData.L, caseData.a, caseData.b);
+    
+    const deltaEl = document.getElementById('control-delta-e');
+    deltaEl.textContent = `ΔE = ${deltaE.toFixed(2)}`;
+    deltaEl.className = 'comparison-delta';
+    if (deltaE < 1.2) deltaEl.classList.add('delta-perfect');
+    else if (deltaE < 3.7) deltaEl.classList.add('delta-acceptable');
+    else deltaEl.classList.add('delta-poor');
+    
+    // Verdict
+    const verdictEl = document.getElementById('control-verdict');
+    let verdictText = '';
+    let verdictClass = '';
+    
+    if (deltaE < 1.2) {
+        verdictText = '✅ Contrôle conforme — accord parfait avec la cible initiale';
+        verdictClass = 'verdict-pass';
+    } else if (deltaE < 3.7) {
+        verdictText = '⚠️ Contrôle acceptable — ajustement fin possible (SPS ou émail)';
+        verdictClass = 'verdict-warn';
+    } else {
+        verdictText = '❌ Corrections nécessaires — le maquillage doit être complété ou corrigé';
+        verdictClass = 'verdict-fail';
+    }
+    
+    verdictEl.textContent = verdictText;
+    verdictEl.className = 'control-verdict ' + verdictClass;
+    
+    // Recommandations
+    const recoSection = document.getElementById('control-recommendations');
+    const recoContent = document.getElementById('control-reco-content');
+    
+    if (deltaE >= 1.2) {
+        recoSection.style.display = 'block';
+        recoContent.textContent = generateControlRecommendations(newL - caseData.L, newA - caseData.a, newB - caseData.b, deltaE, caseData);
+    } else {
+        recoSection.style.display = 'none';
+    }
+    
+    // Scroll vers le résultat
+    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function generateControlRecommendations(dL, da, db, deltaE, caseData) {
+    let reco = '';
+    
+    reco += `> ANALYSE DU VECTEUR RÉSIDUEL\n`;
+    reco += `  ΔL = ${dL > 0 ? '+' : ''}${dL.toFixed(2)}    Δa = ${da > 0 ? '+' : ''}${da.toFixed(2)}    Δb = ${db > 0 ? '+' : ''}${db.toFixed(2)}\n`;
+    reco += `  ΔE résiduel = ${deltaE.toFixed(2)}\n\n`;
+    
+    // Comparer avec le deltaE initial
+    const initialDeltaE = caseData.deltaE || 0;
+    if (deltaE < initialDeltaE) {
+        reco += `> AMÉLIORATION CONFIRMÉE\n`;
+        reco += `  Le maquillage a réduit l'écart de ${initialDeltaE.toFixed(2)} à ${deltaE.toFixed(2)}.\n\n`;
+    } else if (deltaE > initialDeltaE) {
+        reco += `> ⚠️ DÉGRADATION DÉTECTÉE\n`;
+        reco += `  L'écart a augmenté de ${initialDeltaE.toFixed(2)} à ${deltaE.toFixed(2)}.\n`;
+        reco += `  Vérifier l'application du Body Shade et la cuisson.\n\n`;
+    }
+    
+    reco += `> RECOMMANDATIONS SPÉCIFIQUES\n`;
+    reco += `  ─────────────────────────────────────────────────────────\n\n`;
+    
+    if (Math.abs(dL) > 1.5) {
+        if (dL < 0) {
+            reco += `  • LUMINOSITÉ : la prothèse est trop FONCÉE (${dL.toFixed(2)}).\n`;
+            reco += `    → Ajouter une couche Body Shade TRÈS FINE (risque de sur-correction).\n`;
+            reco += `    → Ou privilégier un effet émail clair (L-9/L-10) en incisal.\n\n`;
+        } else {
+            reco += `  • LUMINOSITÉ : la prothèse est trop CLAIRE (${dL.toFixed(2)}).\n`;
+            reco += `    → Le Body Shade a été sous-appliqué ou trop dilué.\n`;
+            reco += `    → Reappliquer une couche Body Shade standard.\n\n`;
+        }
+    }
+    
+    if (Math.abs(da) > 0.8) {
+        if (da > 0) {
+            reco += `  • AXE ROUGE-VERT : décalage vers le ROUGE (+${da.toFixed(2)}).\n`;
+            reco += `    → Utiliser SPS-14 Pink en cervical pour neutraliser.\n`;
+            reco += `    → Ou réduire la quantité de Body Shade (trop opaque).\n\n`;
+        } else {
+            reco += `  • AXE ROUGE-VERT : décalage vers le VERT (${da.toFixed(2)}).\n`;
+            reco += `    → Ajouter SPS-8 Orange ou SPS-7 Yellow pour réchauffer.\n`;
+            reco += `    → Vérifier le choix du Body Shade (peut-être un groupe trop froid).\n\n`;
+        }
+    }
+    
+    if (Math.abs(db) > 0.8) {
+        if (db > 0) {
+            reco += `  • AXE JAUNE-BLEU : trop JAUNE (+${db.toFixed(2)}).\n`;
+            reco += `    → Appliquer SPS-17 Blue-Grey en zones incisales.\n`;
+            reco += `    → Ou L-OP opalescent pour casser le chroma jaune.\n\n`;
+        } else {
+            reco += `  • AXE JAUNE-BLEU : pas assez JAUNE (${db.toFixed(2)}).\n`;
+            reco += `    → Renforcer avec SPS-7 Yellow en moyen/cervical.\n`;
+            reco += `    → Ou ajouter une touche de SPS-8 Orange.\n\n`;
+        }
+    }
+    
+    if (Math.abs(dL) <= 1.5 && Math.abs(da) <= 0.8 && Math.abs(db) <= 0.8) {
+        reco += `  • Les écarts individuels sont faibles mais le ΔE global (${deltaE.toFixed(2)})\n`;
+        reco += `    suggère une dérive de TEINTE (Hue).\n`;
+        reco += `    → Appliquer des SPS stains légers pour affiner la direction chromatique.\n`;
+        reco += `    → Contrôler à nouveau après glaçage.\n\n`;
+    }
+    
+    reco += `  ─────────────────────────────────────────────────────────\n`;
+    reco += `  RÈGLE D'OR : toujours contrôler avec l'Optishade après chaque\n`;
+    reco += `  correction intermédiaire. Objectif final : ΔE < 1.2.\n`;
+    
+    return reco;
+}
