@@ -623,4 +623,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.input-group input').forEach(input => {
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleCalculate(); });
     });
+    
+    // Mode visuel : choisir une pastille dans la liste déroulante
+    const selectVisuel = document.getElementById('select-visuel');
+    if (selectVisuel) {
+        selectVisuel.addEventListener('change', () => {
+            const code = selectVisuel.value;
+            if (!code) return;
+            const ref = ZSTAIN_DATA.find(r => r.code === code);
+            if (!ref) return;
+            document.getElementById('input-L').value = ref.L.toFixed(2);
+            document.getElementById('input-a').value = ref.a.toFixed(2);
+            document.getElementById('input-b').value = ref.b.toFixed(2);
+            handleCalculate();
+        });
+    }
 });

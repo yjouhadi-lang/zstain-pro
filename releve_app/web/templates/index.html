@@ -42,6 +42,24 @@
                             <span>Utiliser CIEDE2000 (recommandé)</span>
                         </label>
                     </div>
+                    
+                    <div class="visual-mode">
+                        <p class="visual-label">— OU —</p>
+                        <label for="select-visuel">Relevé visuel (sans Optishade)</label>
+                        <select id="select-visuel">
+                            <option value="">Choisir la pastille la plus proche...</option>
+                            <option value="A1L0">A1L0 — Pastille brute A1</option>
+                            <option value="A1L1">A1L1 — 1 couche maquillage A1</option>
+                            <option value="A1L2">A1L2 — 2 couches maquillage A1</option>
+                            <option value="A2L0">A2L0 — Pastille brute A2</option>
+                            <option value="A2L1">A2L1 — 1 couche maquillage A2</option>
+                            <option value="A3L0">A3L0 — Pastille brute A3</option>
+                            <option value="A3L1">A3L1 — 1 couche maquillage A3</option>
+                            <option value="A3L2">A3L2 — 2 couches maquillage A3</option>
+                        </select>
+                        <p class="visual-hint">Le logiciel utilisera les coordonnées Lab de cette pastille comme référence patient.</p>
+                    </div>
+                    
                     <button id="btn-calculate" class="btn btn-primary">🔍 Trouver le match le plus proche</button>
                 </section>
 
