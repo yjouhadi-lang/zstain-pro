@@ -50,11 +50,26 @@ body {
 
 /* Header */
 .header {
-    background: var(--bg-header);
+    background: linear-gradient(135deg, rgba(31,41,55,0.92) 0%, rgba(17,24,39,0.96) 100%);
     color: #fff;
     padding: 32px 0;
     margin-bottom: 32px;
     text-align: center;
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+        0 8px 24px rgba(0,0,0,0.1),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+    position: relative;
+    overflow: hidden;
+}
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 40%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+    pointer-events: none;
 }
 .header h1 { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.025em; margin-bottom: 6px; }
 .header .subtitle { font-size: 0.9375rem; color: var(--text-muted); font-weight: 400; margin-bottom: 10px; }
@@ -136,12 +151,27 @@ body {
 
 /* Cards */
 .card {
-    background: var(--bg-card);
+    background: rgba(255, 255, 255, 0.72);
     border-radius: var(--radius);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow:
+        0 8px 24px rgba(0,0,0,0.06),
+        0 2px 6px rgba(0,0,0,0.03),
+        inset 0 1px 0 rgba(255,255,255,0.6);
     padding: 24px;
     margin-bottom: 20px;
+    backdrop-filter: blur(16px) saturate(130%);
+    -webkit-backdrop-filter: blur(16px) saturate(130%);
+    position: relative;
+    overflow: hidden;
+}
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%; height: 35%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 100%);
+    border-radius: 50% 50% 40% 40%;
+    pointer-events: none;
 }
 .card h2 {
     font-size: 1rem; font-weight: 600; color: var(--text-primary);
@@ -156,11 +186,25 @@ body {
 .field .hint { font-weight: 400; color: var(--text-muted); font-size: 0.75rem; }
 .field input {
     width: 100%; padding: 10px 12px; font-size: 0.9375rem;
-    border: 1px solid var(--border); border-radius: var(--radius);
-    background: var(--bg-card); color: var(--text-primary);
-    transition: border-color 0.15s, box-shadow 0.15s;
+    border: 1px solid rgba(255,255,255,0.55); border-radius: var(--radius);
+    background: rgba(255,255,255,0.55); color: var(--text-primary);
+    transition: all 0.2s;
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    box-shadow:
+        0 2px 4px rgba(0,0,0,0.03),
+        inset 0 1px 0 rgba(255,255,255,0.5),
+        inset 0 -1px 0 rgba(0,0,0,0.02);
 }
-.field input:focus { outline: none; border-color: var(--accent-light); box-shadow: 0 0 0 3px rgba(55,65,81,0.08); }
+.field input:focus {
+    outline: none;
+    border-color: rgba(147,197,253,0.6);
+    background: rgba(255,255,255,0.8);
+    box-shadow:
+        0 0 0 3px rgba(147,197,253,0.15),
+        0 4px 8px rgba(0,0,0,0.04),
+        inset 0 1px 0 rgba(255,255,255,0.6);
+}
 .field input::placeholder { color: var(--text-muted); }
 
 .options { margin-bottom: 16px; }
