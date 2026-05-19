@@ -26,45 +26,9 @@ const PROTOCOLE_MAQUILLAGE = {
 
 const COFFRET_DATA = {
     mapping: { "A1": "L-A", "A2": "L-B", "A3": "L-C" },
-    stains: {
-        "A1": [
-            { code: "SPS-1", nom: "White", usage: "Points blancs, hypoplasies" },
-            { code: "SPS-2", nom: "White FLUO", usage: "Fluorescence blanche" },
-            { code: "SPS-7", nom: "Yellow", usage: "Caractérisation jaune légère" },
-        ],
-        "A2": [
-            { code: "SPS-7", nom: "Yellow", usage: "Caractérisation jaune" },
-            { code: "SPS-8", nom: "Orange", usage: "Caractérisation orange" },
-            { code: "SPS-13", nom: "Brown", usage: "Caractérisation brune" },
-        ],
-        "A3": [
-            { code: "SPS-8", nom: "Orange", usage: "Caractérisation orange" },
-            { code: "SPS-13", nom: "Brown", usage: "Caractérisation brune" },
-            { code: "SPS-19", nom: "Grey", usage: "Ombrage, âge" },
-            { code: "SPS-20", nom: "Dark Brown", usage: "Caractérisation marquée" },
-        ],
-    },
-    enamel: {
-        "A1": [
-            { code: "L-8", nom: "Enamel Effect 8", usage: "Émail clair" },
-            { code: "L-9", nom: "Enamel Effect 9", usage: "Émail très clair" },
-            { code: "L-10", nom: "Enamel Effect 10", usage: "Émail blanc" },
-        ],
-        "A2": [
-            { code: "L-6", nom: "Enamel Effect 6", usage: "Émail moyen" },
-            { code: "L-8", nom: "Enamel Effect 8", usage: "Émail clair" },
-            { code: "L-9", nom: "Enamel Effect 9", usage: "Émail très clair" },
-        ],
-        "A3": [
-            { code: "L-3", nom: "Enamel Effect 3", usage: "Émail translucide" },
-            { code: "L-6", nom: "Enamel Effect 6", usage: "Émail moyen" },
-            { code: "L-OP", nom: "Enamel Opal", usage: "Effet opalescent" },
-        ],
-    },
     liquides: [
         { code: "L-DIL", nom: "Diluting Liquide", usage: "Dilution des pâtes", volume: "8ml" },
         { code: "L-REF", nom: "Refreshing Liquide", usage: "Rafraîchissement", volume: "8ml" },
-        { code: "L-NFL", nom: "Lustre Paste Neutral FLUO", usage: "Fluorescence", volume: "4g" },
     ],
     outils: [
         { code: "BR-00", nom: "Pinceau 00", usage: "Détails fins" },
@@ -379,22 +343,6 @@ function renderCoffret(groupe, niveau) {
         ? `Pas de Body Shade nécessaire — glaçage seul (L-N)`
         : `Teinte corps pour groupe ${groupe} — ${niveau} couche(s) recommandée(s)`;
     
-    const stainsList = document.getElementById('coffret-stains');
-    stainsList.innerHTML = '';
-    (COFFRET_DATA.stains[groupe] || []).forEach(s => {
-        const li = document.createElement('li');
-        li.innerHTML = `<code>${s.code}</code> <span>${s.nom} — ${s.usage}</span>`;
-        stainsList.appendChild(li);
-    });
-    
-    const enamelList = document.getElementById('coffret-enamel');
-    enamelList.innerHTML = '';
-    (COFFRET_DATA.enamel[groupe] || []).forEach(e => {
-        const li = document.createElement('li');
-        li.innerHTML = `<code>${e.code}</code> <span>${e.nom} — ${e.usage}</span>`;
-        enamelList.appendChild(li);
-    });
-    
     const liquidesList = document.getElementById('coffret-liquides');
     liquidesList.innerHTML = '';
     COFFRET_DATA.liquides.forEach(l => {
@@ -476,8 +424,6 @@ function generateProtocol(result, strategie) {
     const deltaC = chroma(dent.a, dent.b) - chroma(l0.a, l0.b);
     
     const direction = classerDirectionChromatique(deltaL, deltaa, deltab);
-    const spsList = recommanderSPS(deltaL, deltaa, deltab, l0.groupe);
-    const emailRec = genererAjustementEmail(deltaL, deltaC);
     
     let protocol = `> RÉSULTAT DU MATCHING\n`;
     protocol += `  Closest match : ${best.code} (${best.description})\n`;
@@ -492,64 +438,44 @@ function generateProtocol(result, strategie) {
     protocol += `  Le Body Shade modifie L*, a* ET b* simultanément — on ne peut pas dissocier ces effets.\n\n`;
     protocol += `  ═══════════════════════════════════════════════════════════\n\n`;
     
-    protocol += `> PROTOCOLE EN 3 PHASES (approche holistique)\n\n`;
+    protocol += `> PROTOCOLE DE MAQUILLAGE — BODY SHADE SEUL\n\n`;
     
-    protocol += `  PHASE 1 — BODY SHADE (correction globale L*+a*+b*)\n`;
+    protocol += `  PHASE UNIQUE — BODY SHADE (correction globale L*+a*+b*)\n`;
     protocol += `  ─────────────────────────────────────────────────────────\n`;
-    protocol += `  Produit : ${COFFRET_DATA.mapping[l0.groupe]}\n`;
+    protocol += `  Produit : Lustre Paste ONE Body Shade ${COFFRET_DATA.mapping[l0.groupe]}\n`;
     protocol += `  Nombre de couches : ${strategie.niveauRecommande} (${proto.couches})\n`;
     protocol += `  Préparation : ${proto.preparation}\n\n`;
     protocol += `  → Objectif : le Body Shade corrige le GROS du décalage chromatique.\n`;
     if (deltaL < -1.5) {
         protocol += `  → La dent est NETTEMENT PLUS FONCÉE : appliquer Body Shade en couche ÉPAISSE, non dilué.\n`;
     } else if (deltaL > 1.0) {
-        protocol += `  → La dent est PLUS CLAIRE : appliquer Body Shade en couche TRÈS FINE ou diluer 50%.\n`;
+        protocol += `  → La dent est PLUS CLAIRE : appliquer Body Shade en couche TRÈS FINE ou diluer 50% avec L-DIL.\n`;
     } else {
         protocol += `  → Luminosité proche : appliquer Body Shade en couche STANDARD.\n`;
     }
-    protocol += `  → Ne PAS chercher à corriger a* ou b* séparément à ce stade.\n\n`;
-    
-    if (strategie.niveauRecommande > 0) {
-        protocol += `  PHASE 2 — CARACTÉRISATION SPS (affinement)\n`;
-        protocol += `  ─────────────────────────────────────────────────────────\n`;
-        if (spsList.length === 0) {
-            protocol += `  → Aucun SPS stain spécifique nécessaire après Body Shade.\n`;
-            protocol += `    Le résidu chromatique est faible ; passer directement à la Phase 3.\n`;
-        } else {
-            protocol += `  → Après la couche Body Shade, affiner la direction chromatique avec :\n`;
-            spsList.forEach(s => { protocol += `    • ${s}\n`; });
-        }
-        protocol += `\n  → RÈGLE D'OR : un SPS stain modifie a*, b* ET C* en même temps.\n`;
-        protocol += `    Ne jamais cumuler SPS foncé + Body Shade épais sans contrôle Optishade intermédiaire.\n\n`;
-    }
-    
-    protocol += `  PHASE 3 — ÉMAIL + GLAÇAGE (finalisation)\n`;
-    protocol += `  ─────────────────────────────────────────────────────────\n`;
-    protocol += `  → Effet émail recommandé : ${emailRec}\n`;
-    protocol += `  → Glaçage : Lustre Paste Neutral (L-N) ou Neutral FLUO (L-NFL)\n`;
-    protocol += `  → Cuisson finale selon protocole Artis®\n\n`;
+    protocol += `  → Ne PAS chercher à corriger a* ou b* séparément.\n`;
+    protocol += `  → Le Body Shade est le SEUL produit de maquillage nécessaire pour la teinte de base.\n\n`;
     
     protocol += `> ÉTAPES CONCRÈTES\n`;
     protocol += `  1. Usiner la prothèse en zircone ${l0.groupe} (4Y-PSZ)\n`;
     protocol += `  2. Frittage + nettoyage IPA 96%\n`;
     if (strategie.niveauRecommande === 0) {
-        protocol += `  3. Application L-N + glaçage (pas de Body Shade)\n`;
+        protocol += `  3. Glaçage seul (pas de Body Shade nécessaire)\n`;
     } else if (strategie.niveauRecommande === 1) {
         protocol += `  3. 1 couche Body Shade ${COFFRET_DATA.mapping[l0.groupe]} (ajuster épaisseur)\n`;
         protocol += `  4. Séchage → contrôle Optishade (ΔE cible 1.2–1.5)\n`;
-        protocol += `  5. SPS stains si besoin (Phase 2)\n`;
-        protocol += `  6. Émail + glaçage → cuisson Artis®\n`;
+        protocol += `  5. Cuisson finale selon protocole Artis®\n`;
     } else {
         protocol += `  3. 1ère couche Body Shade ${COFFRET_DATA.mapping[l0.groupe]}\n`;
         protocol += `  4. 1ère cuisson effets\n`;
         protocol += `  5. 2ème couche Body Shade (ajuster selon résidu)\n`;
         protocol += `  6. Séchage → contrôle Optishade (ΔE cible 1.2–1.5)\n`;
-        protocol += `  7. SPS stains si besoin (Phase 2)\n`;
-        protocol += `  8. Émail + glaçage → cuisson finale Artis®\n`;
+        protocol += `  7. Cuisson finale selon protocole Artis®\n`;
     }
     protocol += `\n`;
     protocol += `> PRODUITS GC INITIAL RECOMMANDÉS\n`;
-    protocol += `  Body Shade : ${COFFRET_DATA.mapping[l0.groupe]}\n`;
+    protocol += `  Body Shade : Lustre Paste ONE ${COFFRET_DATA.mapping[l0.groupe]} (4g)\n`;
+    protocol += `  Liquides : L-DIL (dilution) + L-REF (rafraîchissement)\n`;
     protocol += `  Effort de saturation : ${result.effortSaturation.toFixed(1)}%\n`;
     
     return protocol;
@@ -1142,55 +1068,61 @@ function generateControlRecommendations(dL, da, db, deltaE, caseData) {
         reco += `  Vérifier l'application du Body Shade et la cuisson.\n\n`;
     }
     
-    reco += `> RECOMMANDATIONS SPÉCIFIQUES\n`;
+    reco += `> RECOMMANDATIONS — AJUSTEMENT BODY SHADE\n`;
     reco += `  ─────────────────────────────────────────────────────────\n\n`;
     
     if (Math.abs(dL) > 1.5) {
         if (dL < 0) {
             reco += `  • LUMINOSITÉ : la prothèse est trop FONCÉE (${dL.toFixed(2)}).\n`;
-            reco += `    → Ajouter une couche Body Shade TRÈS FINE (risque de sur-correction).\n`;
-            reco += `    → Ou privilégier un effet émail clair (L-9/L-10) en incisal.\n\n`;
+            reco += `    → Le Body Shade a été sur-appliqué ou la couche est trop épaisse.\n`;
+            reco += `    → CORRECTION : ponçage léger + réapplication Body Shade très fine.\n`;
+            reco += `    → Ou diluer la pâte à 30-50% avec L-DIL pour plus de transparence.\n\n`;
         } else {
             reco += `  • LUMINOSITÉ : la prothèse est trop CLAIRE (${dL.toFixed(2)}).\n`;
             reco += `    → Le Body Shade a été sous-appliqué ou trop dilué.\n`;
-            reco += `    → Reappliquer une couche Body Shade standard.\n\n`;
+            reco += `    → CORRECTION : reappliquer une couche Body Shade standard non diluée.\n`;
+            reco += `    → Si 2 couches déjà appliquées, vérifier la température de cuisson.\n\n`;
         }
     }
     
     if (Math.abs(da) > 0.8) {
         if (da > 0) {
             reco += `  • AXE ROUGE-VERT : décalage vers le ROUGE (+${da.toFixed(2)}).\n`;
-            reco += `    → Utiliser SPS-14 Pink en cervical pour neutraliser.\n`;
-            reco += `    → Ou réduire la quantité de Body Shade (trop opaque).\n\n`;
+            reco += `    → Le Body Shade du groupe ${caseData.strategie?.groupeDepart || ''} est trop warm.\n`;
+            reco += `    → CORRECTION : essayer le Body Shade du groupe inférieur (plus froid)\n`;
+            reco += `      ou diluer avec L-DIL pour réduire l'opacité chromatique.\n\n`;
         } else {
             reco += `  • AXE ROUGE-VERT : décalage vers le VERT (${da.toFixed(2)}).\n`;
-            reco += `    → Ajouter SPS-8 Orange ou SPS-7 Yellow pour réchauffer.\n`;
-            reco += `    → Vérifier le choix du Body Shade (peut-être un groupe trop froid).\n\n`;
+            reco += `    → Le Body Shade est trop froid pour la cible.\n`;
+            reco += `    → CORRECTION : essayer le Body Shade du groupe supérieur (plus warm)\n`;
+            reco += `      ou augmenter l'épaisseur de la couche existante.\n\n`;
         }
     }
     
     if (Math.abs(db) > 0.8) {
         if (db > 0) {
             reco += `  • AXE JAUNE-BLEU : trop JAUNE (+${db.toFixed(2)}).\n`;
-            reco += `    → Appliquer SPS-17 Blue-Grey en zones incisales.\n`;
-            reco += `    → Ou L-OP opalescent pour casser le chroma jaune.\n\n`;
+            reco += `    → Le Body Shade est trop saturé en jaune.\n`;
+            reco += `    → CORRECTION : diluer avec L-DIL ou passer au groupe inférieur.\n`;
+            reco += `    → Vérifier si la couche n'est pas trop épaisse.\n\n`;
         } else {
             reco += `  • AXE JAUNE-BLEU : pas assez JAUNE (${db.toFixed(2)}).\n`;
-            reco += `    → Renforcer avec SPS-7 Yellow en moyen/cervical.\n`;
-            reco += `    → Ou ajouter une touche de SPS-8 Orange.\n\n`;
+            reco += `    → Le Body Shade manque de chroma jaune.\n`;
+            reco += `    → CORRECTION : augmenter l'épaisseur ou choisir un groupe plus saturé.\n\n`;
         }
     }
     
     if (Math.abs(dL) <= 1.5 && Math.abs(da) <= 0.8 && Math.abs(db) <= 0.8) {
         reco += `  • Les écarts individuels sont faibles mais le ΔE global (${deltaE.toFixed(2)})\n`;
-        reco += `    suggère une dérive de TEINTE (Hue).\n`;
-        reco += `    → Appliquer des SPS stains légers pour affiner la direction chromatique.\n`;
-        reco += `    → Contrôler à nouveau après glaçage.\n\n`;
+        reco += `    suggère une dérive de TEINTE (Hue) globale.\n`;
+        reco += `    → CORRECTION : ajuster l'épaisseur globale du Body Shade.\n`;
+        reco += `    → Un léger ponçage + réapplication fine peut corriger la direction.\n\n`;
     }
     
     reco += `  ─────────────────────────────────────────────────────────\n`;
-    reco += `  RÈGLE D'OR : toujours contrôler avec l'Optishade après chaque\n`;
-    reco += `  correction intermédiaire. Objectif final : ΔE < 1.2.\n`;
+    reco += `  RÈGLE D'OR : ce logiciel se concentre uniquement sur la TEINTE DE BASE.\n`;
+    reco += `  Seul le Body Shade est utilisé pour le maquillage colorimétrique.\n`;
+    reco += `  Objectif final : ΔE < 1.2 avec l'Optishade.\n`;
     
     return reco;
 }
