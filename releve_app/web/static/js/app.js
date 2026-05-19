@@ -6,14 +6,14 @@
  */
 
 const ZSTAIN_DATA = [
-    { code: "A1L0", description: "Pastille brute A1 (niveau 0)", groupe: "A1", niveau: 0, L: 85.47, a: 1.87, b: 16.50, deltaE_consecutif: null },
-    { code: "A1L1", description: "A1 - 1ère couche de maquillage", groupe: "A1", niveau: 1, L: 84.23, a: 2.20, b: 17.30, deltaE_consecutif: 1.20 },
-    { code: "A1L2", description: "A1 - 2ème couche de maquillage", groupe: "A1", niveau: 2, L: 82.87, a: 3.13, b: 21.77, deltaE_consecutif: 1.30 },
-    { code: "A2L0", description: "Pastille brute A2 (niveau 0)", groupe: "A2", niveau: 0, L: 82.80, a: 2.47, b: 19.70, deltaE_consecutif: null },
-    { code: "A2L1", description: "A2 - 1ère couche de maquillage", groupe: "A2", niveau: 1, L: 82.37, a: 2.97, b: 22.07, deltaE_consecutif: 1.30 },
-    { code: "A3L0", description: "Pastille brute A3 (niveau 0)", groupe: "A3", niveau: 0, L: 81.23, a: 4.47, b: 21.30, deltaE_consecutif: null },
-    { code: "A3L1", description: "A3 - 1ère couche de maquillage", groupe: "A3", niveau: 1, L: 80.86, a: 5.28, b: 21.62, deltaE_consecutif: 1.83 },
-    { code: "A3L2", description: "A3 - 2ème couche de maquillage", groupe: "A3", niveau: 2, L: 80.23, a: 6.09, b: 22.26, deltaE_consecutif: 1.21 },
+    { code: "A1L0", description: "Pastille brute A1 (niveau 0)", groupe: "A1", niveau: 0, L: 85.47, a: 1.87, b: 18.55, deltaE_consecutif: null },
+    { code: "A1L1", description: "A1 - 1ère couche de maquillage", groupe: "A1", niveau: 1, L: 84.43, a: 2.15, b: 17.17, deltaE_consecutif: 1.27 },
+    { code: "A1L2", description: "A1 - 2ème couche de maquillage", groupe: "A1", niveau: 2, L: 83.94, a: 2.49, b: 17.77, deltaE_consecutif: 1.70 },
+    { code: "A2L0", description: "Pastille brute A2 (niveau 0)", groupe: "A2", niveau: 0, L: 82.80, a: 2.41, b: 19.70, deltaE_consecutif: null },
+    { code: "A2L1", description: "A2 - 1ère couche de maquillage", groupe: "A2", niveau: 1, L: 82.37, a: 2.97, b: 22.07, deltaE_consecutif: 2.46 },
+    { code: "A3L0", description: "Pastille brute A3 (niveau 0)", groupe: "A3", niveau: 0, L: 81.23, a: 4.47, b: 21.90, deltaE_consecutif: null },
+    { code: "A3L1", description: "A3 - 1ère couche de maquillage", groupe: "A3", niveau: 1, L: 78.88, a: 5.77, b: 23.50, deltaE_consecutif: 3.00 },
+    { code: "A3L2", description: "A3 - 2ème couche de maquillage", groupe: "A3", niveau: 2, L: 77.13, a: 5.47, b: 25.48, deltaE_consecutif: 3.20 },
 ];
 
 const L_MAX_TEINTIER = Math.max(...ZSTAIN_DATA.map(r => r.L));
