@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zstain Pro - Détermination Colorimétrique</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.5">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -192,6 +192,43 @@
                             <span class="base-desc" id="comp-base-desc">—</span>
                             <span class="base-delta" id="comp-base-delta">—</span>
                         </div>
+                    </section>
+
+                    <!-- Parcours de maquillage (3 étapes) -->
+                    <section class="card steps-card" id="steps-card" style="display: none;">
+                        <h2>🪜 Parcours de maquillage</h2>
+                        <p class="help-text">Le Body Shade rapproche la prothèse du closest match, mais un écart résiduel peut subsister vers la dent cible</p>
+                        <div class="steps-row">
+                            <div class="step-item">
+                                <div class="pastille-img glass" id="steps-base-img"></div>
+                                <div class="step-label">Pastille de base</div>
+                                <div class="step-code" id="steps-base-code">—</div>
+                                <div class="step-lab" id="steps-base-lab">—</div>
+                            </div>
+                            <div class="step-arrow">
+                                <div class="arrow">→</div>
+                                <div class="step-delta" id="steps-delta-base-match">ΔE = —</div>
+                                <span class="step-badge effort">effort standard</span>
+                            </div>
+                            <div class="step-item">
+                                <div class="pastille-img glass" id="steps-match-img"></div>
+                                <div class="step-label">Closest match</div>
+                                <div class="step-code" id="steps-match-code">—</div>
+                                <div class="step-lab" id="steps-match-lab">—</div>
+                            </div>
+                            <div class="step-arrow">
+                                <div class="arrow">→</div>
+                                <div class="step-delta" id="steps-delta-match-dent">ΔE = —</div>
+                                <span class="step-badge residual">résidu</span>
+                            </div>
+                            <div class="step-item">
+                                <div class="pastille-img measured glass" id="steps-dent-img"></div>
+                                <div class="step-label">Dent cible</div>
+                                <div class="step-code">Patient</div>
+                                <div class="step-lab" id="steps-dent-lab">—</div>
+                            </div>
+                        </div>
+                        <div class="steps-summary" id="steps-summary"></div>
                     </section>
 
                     <!-- Barres d'effort -->
@@ -416,6 +453,6 @@
             <p>Zstain Pro &middot; CCTD – CHU Ibn Rochd</p>
         </footer>
     </div>
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=3.4"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=3.5"></script>
 </body>
 </html>

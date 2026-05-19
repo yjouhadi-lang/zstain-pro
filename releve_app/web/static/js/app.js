@@ -259,6 +259,61 @@ function renderComparison(result) {
     }
 }
 
+function renderStepsComparison(result) {
+    const dent = result.measured;
+    const match = result.bestMatch;
+    const l0 = ZSTAIN_DATA.find(r => r.code === match.groupe + "L0");
+    if (!l0) return;
+    
+    // Couleurs
+    const baseRgb = labToRgb(l0.L, l0.a, l0.b);
+    const matchRgb = labToRgb(match.L, match.a, match.b);
+    const dentRgb = labToRgb(dent.L, dent.a, dent.b);
+    
+    document.getElementById('steps-base-img').style.background = rgbToHex(baseRgb.r, baseRgb.g, baseRgb.b);
+    document.getElementById('steps-match-img').style.background = rgbToHex(matchRgb.r, matchRgb.g, matchRgb.b);
+    document.getElementById('steps-dent-img').style.background = rgbToHex(dentRgb.r, dentRgb.g, dentRgb.b);
+    
+    // Codes et Lab
+    document.getElementById('steps-base-code').textContent = l0.code;
+    document.getElementById('steps-base-lab').textContent = `L*=${l0.L.toFixed(1)} a*=${l0.a.toFixed(1)} b*=${l0.b.toFixed(1)}`;
+    
+    document.getElementById('steps-match-code').textContent = match.code;
+    document.getElementById('steps-match-lab').textContent = `L*=${match.L.toFixed(1)} a*=${match.a.toFixed(1)} b*=${match.b.toFixed(1)}`;
+    
+    document.getElementById('steps-dent-lab').textContent = `L*=${dent.L.toFixed(1)} a*=${dent.a.toFixed(1)} b*=${dent.b.toFixed(1)}`;
+    
+    // ΔE entre Base et Match (effort standard du maquillage)
+    const deBaseMatch = deltaE_cie76(l0.L, l0.a, l0.b, match.L, match.a, match.b);
+    const elBaseMatch = document.getElementById('steps-delta-base-match');
+    elBaseMatch.textContent = `ΔE = ${deBaseMatch.toFixed(2)}`;
+    elBaseMatch.className = 'step-delta';
+    if (deBaseMatch < 1.2) elBaseMatch.classList.add('delta-perfect');
+    else if (deBaseMatch < 3.7) elBaseMatch.classList.add('delta-acceptable');
+    else elBaseMatch.classList.add('delta-poor');
+    
+    // ΔE entre Match et Dent (résidu — ce que le maquillage standard ne couvre pas)
+    const deMatchDent = deltaE_cie76(match.L, match.a, match.b, dent.L, dent.a, dent.b);
+    const elMatchDent = document.getElementById('steps-delta-match-dent');
+    elMatchDent.textContent = `ΔE = ${deMatchDent.toFixed(2)}`;
+    elMatchDent.className = 'step-delta';
+    if (deMatchDent < 1.2) elMatchDent.classList.add('delta-perfect');
+    else if (deMatchDent < 3.7) elMatchDent.classList.add('delta-acceptable');
+    else elMatchDent.classList.add('delta-poor');
+    
+    // Résumé pédagogique
+    const summaryEl = document.getElementById('steps-summary');
+    let summary = '';
+    if (deMatchDent < 1.2) {
+        summary = `✅ Le closest match ${match.code} est très proche de la dent (ΔE=${deMatchDent.toFixed(2)}). Le maquillage standard suffit.`;
+    } else if (deMatchDent < 3.7) {
+        summary = `⚠️ Résidu modéré (ΔE=${deMatchDent.toFixed(2)}) entre ${match.code} et la dent. Le Body Shade standard rapprochera significativement, mais un ajustement fin (épaisseur/dilution) peut être nécessaire.`;
+    } else {
+        summary = `❌ Résidu important (ΔE=${deMatchDent.toFixed(2)}) entre ${match.code} et la dent. Le maquillage standard (${match.code}) ne suffit pas — envisager une 2ème couche Body Shade ou un ajustement de groupe.`;
+    }
+    summaryEl.textContent = summary;
+}
+
 function renderEffortBars(result, strategie) {
     const dent = result.measured;
     const l0 = strategie.pointDepart;
@@ -506,6 +561,7 @@ function updateUI(result, mode) {
     
     document.getElementById('teintier-card').style.display = 'block';
     document.getElementById('comparison-card').style.display = 'block';
+    document.getElementById('steps-card').style.display = 'block';
     document.getElementById('effort-card').style.display = 'block';
     document.getElementById('result-card').style.display = 'block';
     document.getElementById('protocol-card').style.display = 'block';
@@ -521,6 +577,7 @@ function updateUI(result, mode) {
     
     renderTeintier(ref.code, result.measured);
     renderComparison(result);
+    renderStepsComparison(result);
     renderEffortBars(result, strategie);
     
     document.querySelector('.match-code').textContent = ref.code;
