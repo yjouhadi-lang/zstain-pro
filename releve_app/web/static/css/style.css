@@ -151,26 +151,27 @@ body {
 
 /* Cards */
 .card {
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.45);
     border-radius: var(--radius);
-    border: 1px solid rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.75);
     box-shadow:
-        0 8px 24px rgba(0,0,0,0.06),
-        0 2px 6px rgba(0,0,0,0.03),
-        inset 0 1px 0 rgba(255,255,255,0.6);
+        0 12px 32px rgba(0,0,0,0.08),
+        0 4px 8px rgba(0,0,0,0.04),
+        inset 0 1px 0 rgba(255,255,255,0.7);
     padding: 24px;
     margin-bottom: 20px;
-    backdrop-filter: blur(16px) saturate(130%);
-    -webkit-backdrop-filter: blur(16px) saturate(130%);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
     position: relative;
     overflow: hidden;
 }
 .card::before {
     content: '';
     position: absolute;
-    top: 0; left: 8%; right: 8%; height: 35%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 100%);
+    top: 0; left: 5%; right: 5%; height: 45%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.15) 60%, transparent 100%);
     border-radius: 50% 50% 40% 40%;
+    filter: blur(0.5px);
     pointer-events: none;
 }
 .card h2 {
