@@ -585,6 +585,9 @@ function updateUI(result, mode) {
     renderStepsComparison(result);
     renderEffortBars(result, strategie);
     
+    // Sauvegarder dans l'historique
+    saveToHistory(result, mode || 'digital');
+    
     document.querySelector('.match-code').textContent = ref.code;
     document.querySelector('.match-deltaE').textContent = `ΔE = ${result.deltaE.toFixed(2)}`;
     document.getElementById('match-description').textContent = ref.description;
@@ -622,6 +625,88 @@ function handleCalculate() {
     const activeTab = document.querySelector('.tab-btn.active');
     const mode = activeTab ? activeTab.dataset.tab : 'digital';
     updateUI(result, mode);
+}
+
+// ============================================================================
+// HISTORIQUE (localStorage)
+// ============================================================================
+
+const HISTORY_KEY = 'zstain_history';
+const HISTORY_MAX = 5;
+
+function saveToHistory(result, mode) {
+    try {
+        const dent = result.measured;
+        const ref = result.bestMatch;
+        const entry = {
+            date: new Date().toISOString(),
+            L: dent.L,
+            a: dent.a,
+            b: dent.b,
+            ciede2000: document.getElementById('chk-ciede2000').checked,
+            mode: mode,
+            bestMatch: ref.code,
+            deltaE: result.deltaE,
+        };
+        
+        let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        // Éviter les doublons exacts (même L,a,b)
+        history = history.filter(h => !(Math.abs(h.L - dent.L) < 0.01 && Math.abs(h.a - dent.a) < 0.01 && Math.abs(h.b - dent.b) < 0.01));
+        history.unshift(entry);
+        if (history.length > HISTORY_MAX) history = history.slice(0, HISTORY_MAX);
+        
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        loadHistory();
+    } catch (e) {
+        console.error('Erreur sauvegarde historique:', e);
+    }
+}
+
+function loadHistory() {
+    try {
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        const wrapper = document.getElementById('history-wrapper');
+        const select = document.getElementById('history-select');
+        
+        if (history.length === 0) {
+            if (wrapper) wrapper.style.display = 'none';
+            return;
+        }
+        
+        if (wrapper) wrapper.style.display = 'block';
+        select.innerHTML = '<option value="">Charger une analyse précédente...</option>';
+        
+        history.forEach((h, i) => {
+            const date = new Date(h.date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `${date} — ${h.bestMatch} (ΔE=${h.deltaE.toFixed(2)}) — L=${h.L.toFixed(1)} a=${h.a.toFixed(1)} b=${h.b.toFixed(1)}`;
+            select.appendChild(option);
+        });
+    } catch (e) {
+        console.error('Erreur chargement historique:', e);
+    }
+}
+
+function restoreCaseFromHistory(index) {
+    try {
+        const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        const h = history[index];
+        if (!h) return;
+        
+        document.getElementById('input-L').value = h.L.toFixed(2);
+        document.getElementById('input-a').value = h.a.toFixed(2);
+        document.getElementById('input-b').value = h.b.toFixed(2);
+        document.getElementById('chk-ciede2000').checked = h.ciede2000;
+        
+        const result = findClosestMatch(h.L, h.a, h.b, h.ciede2000);
+        updateUI(result, h.mode || 'digital');
+        
+        // Remettre le select à l'option par défaut
+        document.getElementById('history-select').value = '';
+    } catch (e) {
+        console.error('Erreur restauration historique:', e);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -675,6 +760,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // === CONTRÔLE DE MAQUILLAGE ===
     initControlModule();
+    
+    // === HISTORIQUE ===
+    loadHistory();
+    const historySelect = document.getElementById('history-select');
+    if (historySelect) {
+        historySelect.addEventListener('change', () => {
+            const idx = historySelect.value;
+            if (idx === '') return;
+            restoreCaseFromHistory(parseInt(idx));
+        });
+    }
 });
 
 

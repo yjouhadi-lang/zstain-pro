@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zstain Pro - Détermination Colorimétrique</title>
-    <link rel="stylesheet" href="static/css/style.css?v=3.8">
+    <link rel="stylesheet" href="static/css/style.css?v=3.9">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -43,6 +43,14 @@
                         <section class="card input-card">
                             <h2>Coordonnées Lab — Optishade®</h2>
                             <p class="help-text">Saisissez les valeurs mesurées sur la dent du patient</p>
+
+                            <div class="history-select-wrapper" id="history-wrapper" style="display:none;">
+                                <label for="history-select">📚 Analyses récentes</label>
+                                <select id="history-select">
+                                    <option value="">Charger une analyse précédente...</option>
+                                </select>
+                            </div>
+
                             <div class="input-group">
                                 <div class="field">
                                     <label for="input-L">L* <span class="hint">Luminosité</span></label>
@@ -453,6 +461,6 @@
             <p>Zstain Pro &middot; CCTD – CHU Ibn Rochd</p>
         </footer>
     </div>
-    <script src="static/js/app.js?v=3.8"></script>
+    <script src="static/js/app.js?v=3.9"></script>
 </body>
 </html>
