@@ -476,6 +476,35 @@ tbody tr.highlight td { font-weight: 600; color: var(--info); }
 .comparison-delta.delta-acceptable { color: #ea580c; }
 .comparison-delta.delta-poor { color: #dc2626; }
 
+.comparison-base {
+    margin-top: 20px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #86efac;
+    border-radius: var(--radius);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.base-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #16a34a;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.base-code {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #14532d;
+}
+.base-desc {
+    font-size: 0.8125rem;
+    color: #166534;
+}
+
 /* === BARRES D'EFFORT === */
 .effort-bars { display: flex; flex-direction: column; gap: 20px; }
 

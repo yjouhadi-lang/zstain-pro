@@ -279,6 +279,13 @@ function renderComparison(result) {
     if (deltaE < 1.2) deltaEl.classList.add('delta-perfect');
     else if (deltaE < 3.7) deltaEl.classList.add('delta-acceptable');
     else deltaEl.classList.add('delta-poor');
+    
+    // Pastille de base (L0 du groupe du closest match)
+    const l0 = ZSTAIN_DATA.find(r => r.code === result.bestMatch.groupe + "L0");
+    if (l0) {
+        document.getElementById('comp-base-code').textContent = l0.code;
+        document.getElementById('comp-base-desc').textContent = l0.description;
+    }
 }
 
 function renderEffortBars(result, strategie) {
