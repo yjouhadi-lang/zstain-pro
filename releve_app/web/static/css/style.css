@@ -504,6 +504,18 @@ tbody tr.highlight td { font-weight: 600; color: var(--info); }
     font-size: 0.8125rem;
     color: #166534;
 }
+.base-delta {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    width: fit-content;
+}
+.base-delta.delta-perfect { color: #16a34a; background: rgba(16,185,129,0.08); }
+.base-delta.delta-acceptable { color: #d97706; background: rgba(245,158,11,0.08); }
+.base-delta.delta-poor { color: #dc2626; background: rgba(239,68,68,0.08); }
 
 /* === BARRES D'EFFORT === */
 .effort-bars { display: flex; flex-direction: column; gap: 20px; }

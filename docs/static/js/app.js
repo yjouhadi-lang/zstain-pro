@@ -285,6 +285,13 @@ function renderComparison(result) {
     if (l0) {
         document.getElementById('comp-base-code').textContent = l0.code;
         document.getElementById('comp-base-desc').textContent = l0.description;
+        const deBase = deltaE_cie76(ref.L, ref.a, ref.b, l0.L, l0.a, l0.b);
+        const baseDeltaEl = document.getElementById('comp-base-delta');
+        baseDeltaEl.textContent = `ΔE(ref vs base) = ${deBase.toFixed(2)}`;
+        baseDeltaEl.className = 'base-delta';
+        if (deBase < 1.2) baseDeltaEl.classList.add('delta-perfect');
+        else if (deBase < 3.7) baseDeltaEl.classList.add('delta-acceptable');
+        else baseDeltaEl.classList.add('delta-poor');
     }
 }
 
