@@ -263,13 +263,14 @@ function renderEffortBars(result, strategie) {
     const dent = result.measured;
     const l0 = strategie.pointDepart;
     
-    // Écarts calculés par rapport au point de départ L0 (pas le closest match)
-    const deltaL = dent.L - l0.L;
-    const deltaa = dent.a - l0.a;
-    const deltab = dent.b - l0.b;
-    const deltaC = chroma(dent.a, dent.b) - chroma(l0.a, l0.b);
+    // Écarts calculés comme EFFORT NÉCESSAIRE (L0 - dent)
+    // La barre indique la direction et l'amplitude de la correction à appliquer
+    const deltaL = l0.L - dent.L;   // >0 = il faut éclaircir
+    const deltaa = l0.a - dent.a;   // >0 = il faut ajouter du rouge
+    const deltab = l0.b - dent.b;   // >0 = il faut ajouter du jaune
+    const deltaC = chroma(l0.a, l0.b) - chroma(dent.a, dent.b); // >0 = il faut augmenter saturation
     const de76 = deltaE_cie76(dent.L, dent.a, dent.b, l0.L, l0.a, l0.b);
-    const deltaH = Math.sqrt(Math.max(0, de76**2 - deltaL**2 - deltaC**2));
+    const deltaH = Math.sqrt(Math.max(0, de76**2 - (dent.L-l0.L)**2 - (chroma(dent.a,dent.b)-chroma(l0.a,l0.b))**2 ));
     
     const params = [
         { key: 'L', name: 'Luminosité', val: deltaL, thresholds: [1, 2.5] },
@@ -301,35 +302,44 @@ function renderEffortBars(result, strategie) {
     });
 }
 
-function genererGuideEffort(param, valeur, l0, dent) {
-    const abs = Math.abs(valeur);
+function genererGuideEffort(param, effort, l0, dent) {
+    const abs = Math.abs(effort);
     let guide = '';
     
-    // Les barres servent d'information visuelle sur le vecteur global.
-    // Les conseils segmentaires ont été remplacés par le protocole holistique.
+    // Les barres indiquent l'EFFORT à fournir (direction de correction).
+    // >0 = il faut augmenter ce paramètre
+    // <0 = il faut diminuer ce paramètre
     
     if (param === 'L') {
-        guide = valeur > 0 
-            ? `L* supérieur : la dent est plus claire que ${l0.code}.`
-            : `L* inférieur : la dent est plus foncée que ${l0.code}.`;
+        if (effort > 0) {
+            guide = `L* inférieur : la dent est plus FONCÉE que ${l0.code}. → EFFORT : ÉCLAIRCIR (augmenter L*).`;
+        } else {
+            guide = `L* supérieur : la dent est plus CLAIRE que ${l0.code}. → EFFORT : ASSOMBRIR (diminuer L*).`;
+        }
     } else if (param === 'a') {
-        guide = valeur > 0
-            ? `a* positif : décalage vers le rouge/warm.`
-            : `a* négatif : décalage vers le vert/froid.`;
+        if (effort > 0) {
+            guide = `a* négatif : décalage vers le VERT/FROID. → EFFORT : ajouter du ROUGE (+a*).`;
+        } else {
+            guide = `a* positif : décalage vers le ROUGE/WARM. → EFFORT : ajouter du VERT (−a*).`;
+        }
     } else if (param === 'b') {
-        guide = valeur > 0
-            ? `b* positif : décalage vers le jaune.`
-            : `b* négatif : décalage vers le bleu (moins jaune).`;
+        if (effort > 0) {
+            guide = `b* négatif : décalage vers le BLEU (moins jaune). → EFFORT : ajouter du JAUNE (+b*).`;
+        } else {
+            guide = `b* positif : décalage vers le JAUNE. → EFFORT : ajouter du BLEU (−b*).`;
+        }
     } else if (param === 'C') {
-        guide = valeur > 0
-            ? `C* supérieur : dent plus saturée que ${l0.code}.`
-            : `C* inférieur : dent moins saturée que ${l0.code}.`;
+        if (effort > 0) {
+            guide = `C* inférieur : dent MOINS SATURÉE que ${l0.code}. → EFFORT : AUGMENTER la saturation (+C*).`;
+        } else {
+            guide = `C* supérieur : dent PLUS SATURÉE que ${l0.code}. → EFFORT : DIMINUER la saturation (−C*).`;
+        }
     } else if (param === 'H') {
         guide = `Décalage de teinte (Hue) détecté. Analyser la direction globale a*+b*.`;
     }
     
-    if (abs < 0.5) guide += ` Écart faible — le Body Shade du groupe absorbe cette différence.`;
-    else guide += ` Voir le protocole holistique pour l'ajustement concret.`;
+    if (abs < 0.5) guide += ` Effort faible — le Body Shade du groupe absorbe cette différence.`;
+    else guide += ` Voir le protocole pour l'ajustement concret du Body Shade.`;
     
     return guide;
 }
